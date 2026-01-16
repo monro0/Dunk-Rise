@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreElement = document.getElementById('finalScore');
     const restartButton = document.getElementById('restartButton');
-    const topRestartBtn = document.getElementById('topRestartBtn'); // [ИЗМЕНЕНИЕ 13]
+    const topRestartBtn = document.getElementById('topRestartBtn');
 
     // --- CONFIG ---
     const GRAVITY = 0.6;
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- STATE ---
-    let width, height; // Логические размеры (CSS-пиксели)
+    let width, height;
     let score = 0;
     let isGameOver = false;
     let lastTime = 0;
@@ -56,28 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE ---
 
-    // [ИЗМЕНЕНИЕ 12] Исправление размытия на мобильных
     function resize() {
         const dpr = window.devicePixelRatio || 1;
-        
-        // Получаем логические размеры контейнера
         width = container.clientWidth;
         height = container.clientHeight;
-
-        // Устанавливаем физические размеры канваса (умноженные на плотность пикселей)
         canvas.width = width * dpr;
         canvas.height = height * dpr;
-
-        // Устанавливаем CSS размеры (чтобы он влез в контейнер)
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
-
-        // Масштабируем контекст рисования, чтобы нам не пришлось менять координаты в логике
         ctx.scale(dpr, dpr);
     }
 
     function initGame() {
-        resize(); // [ИЗМЕНЕНИЕ 12] Вызываем ресайз перед стартом
+        resize();
         isGameOver = false;
         score = 0;
         
@@ -118,18 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // [ИЗМЕНЕНИЕ 11] Исправление наложения колец
     function spawnNewHoop(prevHoop = null) {
         if (!prevHoop) prevHoop = hoops[hoops.length - 1];
 
-        // Защита от бесконечного цикла
         let attempts = 0;
         const MAX_ATTEMPTS = 20;
         let validPosition = false;
 
         let newX, newY, type, backboardSide;
 
-        // Цикл попыток генерации
         do {
             type = HOOP_TYPE.NORMAL;
             if (prevHoop.type !== HOOP_TYPE.NORMAL) {
@@ -183,12 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // [ИЗМЕНЕНИЕ 11] Проверка дистанции между центрами
             const dx = newX - prevHoop.x;
             const dy = newY - prevHoop.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
 
-            // Если расстояние больше 1.5 диаметра - позиция валидна
             if (dist > HOOP_DIAMETER * 1.5) {
                 validPosition = true;
             }
@@ -197,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } while (!validPosition && attempts < MAX_ATTEMPTS);
 
-        // Если даже после 20 попыток не нашли (крайне маловероятно), ставим просто выше
         if (!validPosition) {
             newY = prevHoop.y - height * 0.3;
             newX = width / 2; 
@@ -433,24 +418,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DRAWING ---
 
     function draw() {
-        // [ИЗМЕНЕНИЕ 12] Очищаем область логического размера
-        // Так как контекст масштабирован, width/height (логические) это то, что нужно.
         ctx.clearRect(0, 0, width, height);
-        
         ctx.save();
         ctx.translate(0, cameraY);
 
         if (isDragging && ball.isSitting) drawTrajectory();
 
-        hoops.forEach((h, i) => drawHoopBack(h, i === currentHoopIndex));
+        // [ИЗМЕНЕНИЕ 15] Передаем индекс для цветовой кодировки
+        hoops.forEach((h, i) => drawHoopBack(h, i));
         drawBall();
-        hoops.forEach((h, i) => drawHoopFront(h, i === currentHoopIndex));
+        hoops.forEach((h, i) => drawHoopFront(h, i));
         drawParticles();
         drawFloatingTexts();
 
         ctx.restore();
     }
 
+    // [ИЗМЕНЕНИЕ 14] Умная траектория с отскоком
     function drawTrajectory() {
         const dx = dragStart.x - dragCurrent.x;
         const dy = dragStart.y - dragCurrent.y;
@@ -466,12 +450,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.beginPath();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        let sx = ball.x, sy = ball.y, svy = vy;
+        let sx = ball.x, sy = ball.y;
+        let svx = vx; // Локальная скорость X для симуляции
+        let svy = vy;
         
-        for(let i=0; i<15; i++) {
-            sx += vx * 2;
+        // Симулируем 20 точек
+        for(let i=0; i<20; i++) {
+            sx += svx * 2;
             sy += svy * 2;
             svy += GRAVITY * 2;
+
+            // Логика отскока от стен
+            if (sx < BALL_RADIUS) {
+                sx = BALL_RADIUS;
+                svx = -svx * 0.6; // Теряем энергию при отскоке
+            } else if (sx > width - BALL_RADIUS) {
+                sx = width - BALL_RADIUS;
+                svx = -svx * 0.6;
+            }
+
             ctx.beginPath();
             ctx.arc(sx, sy, 4, 0, Math.PI*2);
             ctx.fill();
@@ -489,12 +486,36 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    function drawHoopBack(h, active) {
+    function drawHoopBack(h, index) {
         if(h.scale <= 0) return;
         ctx.save();
         ctx.translate(h.x, h.y);
         ctx.scale(h.scale, h.scale);
         
+        // [ИЗМЕНЕНИЕ 15] Рисуем сетку
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1.5;
+        
+        // Рисуем простую сетку (трапеция)
+        const topW = HOOP_RADIUS;
+        const botW = HOOP_RADIUS * 0.6;
+        const netH = 50;
+
+        // Линии слева направо
+        for(let i=0; i<=4; i++) {
+            let x1 = -topW + (topW*2 * i/4);
+            let x2 = -botW + (botW*2 * i/4);
+            ctx.moveTo(x1, 0);
+            ctx.lineTo(x2, netH);
+        }
+        // Поперечные линии (условно, для объема)
+        ctx.moveTo(-topW*0.8, netH*0.3); ctx.lineTo(topW*0.8, netH*0.3);
+        ctx.moveTo(-topW*0.6, netH*0.6); ctx.lineTo(topW*0.6, netH*0.6);
+        ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH);
+        ctx.stroke();
+
+        // Щит
         if (h.type === HOOP_TYPE.BACKBOARD) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
@@ -510,7 +531,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.stroke();
         }
 
-        ctx.strokeStyle = active ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)';
+        // Задняя часть обода (всегда темнее)
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(-HOOP_RADIUS+10, 0);
@@ -521,20 +543,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    function drawHoopFront(h, active) {
+    // [ИЗМЕНЕНИЕ 15] Цветовая кодировка
+    function drawHoopFront(h, index) {
         if(h.scale <= 0) return;
         ctx.save();
         ctx.translate(h.x, h.y);
         ctx.scale(h.scale, h.scale);
         ctx.lineWidth = 6;
         
-        let color = '#9E9E9E'; 
-        if (active) color = '#FF5722'; 
-        else if (h.y < hoops[currentHoopIndex].y) {
-            if (h.type === HOOP_TYPE.BACKBOARD) color = '#00E676'; 
-            else if (h.type === HOOP_TYPE.MOVING) color = '#FFC107'; 
-            else color = '#FFFFFF'; 
-        }
+        let color = '#9E9E9E'; // По умолчанию СЕРЫЙ (текущее кольцо)
+
+        // Если это СЛЕДУЮЩЕЕ кольцо (цель)
+        if (index === currentHoopIndex + 1) {
+            color = '#FF5722'; // ЯРКО-ОРАНЖЕВЫЙ
+        } 
         
         ctx.strokeStyle = color;
         ctx.beginPath();
@@ -697,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('touchend', endDrag);
 
     restartButton.addEventListener('click', initGame);
-    topRestartBtn.addEventListener('click', initGame); // [ИЗМЕНЕНИЕ 13]
+    topRestartBtn.addEventListener('click', initGame);
     window.addEventListener('resize', () => { resize(); });
 
     initGame();

@@ -4,7 +4,7 @@
     box-sizing: border-box;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent; /* Убирает подсветку при тапе на мобильных */
+    -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
@@ -24,7 +24,8 @@ html, body {
     height: 100%;
     max-width: 450px; 
     max-height: 850px;
-    background: linear-gradient(to bottom, #4A00E0, #8E2DE2);
+    /* [ИЗМЕНЕНИЕ 15] Новый цвет фона - Black Onyx */
+    background: #353838;
     overflow: hidden;
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
 }
@@ -37,7 +38,6 @@ html, body {
     }
 }
 
-/* [ИЗМЕНЕНИЕ 12] Канвас теперь масштабируется через CSS, а не атрибуты */
 canvas {
     display: block;
     width: 100%;
@@ -49,7 +49,7 @@ canvas {
     top: 0;
     left: 0;
     width: 100%;
-    padding: 60px 20px; /* Увеличил отступ, чтобы не наезжало на кнопку рестарта */
+    padding: 60px 20px;
     text-align: center;
     pointer-events: none;
     z-index: 5;
@@ -63,7 +63,6 @@ canvas {
     opacity: 0.9;
 }
 
-/* [ИЗМЕНЕНИЕ 13] Стили кнопки рестарта */
 #topRestartBtn {
     position: absolute;
     top: 20px;
