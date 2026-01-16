@@ -16,19 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreElement = document.getElementById('finalScore');
     const restartButton = document.getElementById('restartButton');
+    const topRestartBtn = document.getElementById('topRestartBtn'); // [ИЗМЕНЕНИЕ 13]
 
     // --- CONFIG ---
     const GRAVITY = 0.6;
     const DRAG_POWER = 0.16;
     const MAX_DRAG = 220;
     const BALL_RADIUS = 22;
-    
-    // [ИЗМЕНЕНИЕ 9] Увеличение размера кольца на 15% (было 40 -> стало 46)
     const HOOP_RADIUS = 46; 
     const HOOP_DIAMETER = HOOP_RADIUS * 2;
     const HOOP_MARGIN = 50; 
 
-    // Типы колец
     const HOOP_TYPE = {
         NORMAL: 'normal',
         BACKBOARD: 'backboard', 
@@ -36,14 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- STATE ---
-    let width, height;
+    let width, height; // Логические размеры (CSS-пиксели)
     let score = 0;
     let isGameOver = false;
     let lastTime = 0;
 
-    // [ИЗМЕНЕНИЕ 10] Переменные для комбо
     let swishCombo = 0;
-    let shotTouchedRim = false; // Коснулся ли мяч дужки в текущем полете?
+    let shotTouchedRim = false;
 
     let cameraY = 0;
     let cameraTargetY = 0;
@@ -59,17 +56,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE ---
 
+    // [ИЗМЕНЕНИЕ 12] Исправление размытия на мобильных
     function resize() {
-        width = canvas.width = container.clientWidth;
-        height = canvas.height = container.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Получаем логические размеры контейнера
+        width = container.clientWidth;
+        height = container.clientHeight;
+
+        // Устанавливаем физические размеры канваса (умноженные на плотность пикселей)
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+
+        // Устанавливаем CSS размеры (чтобы он влез в контейнер)
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        // Масштабируем контекст рисования, чтобы нам не пришлось менять координаты в логике
+        ctx.scale(dpr, dpr);
     }
 
     function initGame() {
-        resize();
+        resize(); // [ИЗМЕНЕНИЕ 12] Вызываем ресайз перед стартом
         isGameOver = false;
         score = 0;
         
-        // Сброс комбо
         swishCombo = 0;
         shotTouchedRim = false;
 
@@ -107,61 +118,89 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // [ИЗМЕНЕНИЕ 11] Исправление наложения колец
     function spawnNewHoop(prevHoop = null) {
         if (!prevHoop) prevHoop = hoops[hoops.length - 1];
 
-        let type = HOOP_TYPE.NORMAL;
-        
-        if (prevHoop.type !== HOOP_TYPE.NORMAL) {
+        // Защита от бесконечного цикла
+        let attempts = 0;
+        const MAX_ATTEMPTS = 20;
+        let validPosition = false;
+
+        let newX, newY, type, backboardSide;
+
+        // Цикл попыток генерации
+        do {
             type = HOOP_TYPE.NORMAL;
-        } else {
-            const rand = Math.random();
-            if (score >= 10) {
-                if (rand < 0.5) type = HOOP_TYPE.NORMAL;
-                else if (rand < 0.75) type = HOOP_TYPE.BACKBOARD;
-                else type = HOOP_TYPE.MOVING;
-            } else if (score >= 5) {
-                if (rand < 0.7) type = HOOP_TYPE.NORMAL;
-                else type = HOOP_TYPE.BACKBOARD;
-            }
-        }
-
-        const minH = height * 0.25; 
-        const maxH = height * 0.45;
-        const distY = minH + Math.random() * (maxH - minH);
-        const newY = prevHoop.y - distY;
-
-        const minShift = HOOP_DIAMETER * 1.1; 
-        const maxShift = width * 0.6; 
-        
-        let possibleSides = [];
-        if (prevHoop.x - minShift > HOOP_MARGIN) possibleSides.push('left');
-        if (prevHoop.x + minShift < width - HOOP_MARGIN) possibleSides.push('right');
-        if (possibleSides.length === 0) possibleSides = ['left', 'right'];
-
-        const side = possibleSides[Math.floor(Math.random() * possibleSides.length)];
-        let newX;
-        let backboardSide = 0;
-
-        if (side === 'left') {
-            const leftLimit = Math.max(HOOP_MARGIN, prevHoop.x - maxShift);
-            const rightLimit = prevHoop.x - minShift; 
-            newX = leftLimit + Math.random() * (rightLimit - leftLimit);
-            backboardSide = -1; 
-        } else {
-            const leftLimit = prevHoop.x + minShift;
-            const rightLimit = Math.min(width - HOOP_MARGIN, prevHoop.x + maxShift);
-            newX = leftLimit + Math.random() * (rightLimit - leftLimit);
-            backboardSide = 1; 
-        }
-
-        if (type === HOOP_TYPE.BACKBOARD) {
-            const safeDistance = HOOP_RADIUS + 25; 
-            if (backboardSide === -1) {
-                if (newX - safeDistance < 0) newX = safeDistance + 5; 
+            if (prevHoop.type !== HOOP_TYPE.NORMAL) {
+                type = HOOP_TYPE.NORMAL;
             } else {
-                if (newX + safeDistance > width) newX = width - safeDistance - 5; 
+                const rand = Math.random();
+                if (score >= 10) {
+                    if (rand < 0.5) type = HOOP_TYPE.NORMAL;
+                    else if (rand < 0.75) type = HOOP_TYPE.BACKBOARD;
+                    else type = HOOP_TYPE.MOVING;
+                } else if (score >= 5) {
+                    if (rand < 0.7) type = HOOP_TYPE.NORMAL;
+                    else type = HOOP_TYPE.BACKBOARD;
+                }
             }
+
+            const minH = height * 0.25; 
+            const maxH = height * 0.45;
+            const distY = minH + Math.random() * (maxH - minH);
+            newY = prevHoop.y - distY;
+
+            const minShift = HOOP_DIAMETER * 1.1; 
+            const maxShift = width * 0.6; 
+            
+            let possibleSides = [];
+            if (prevHoop.x - minShift > HOOP_MARGIN) possibleSides.push('left');
+            if (prevHoop.x + minShift < width - HOOP_MARGIN) possibleSides.push('right');
+            if (possibleSides.length === 0) possibleSides = ['left', 'right'];
+
+            const side = possibleSides[Math.floor(Math.random() * possibleSides.length)];
+            backboardSide = 0;
+
+            if (side === 'left') {
+                const leftLimit = Math.max(HOOP_MARGIN, prevHoop.x - maxShift);
+                const rightLimit = prevHoop.x - minShift; 
+                newX = leftLimit + Math.random() * (rightLimit - leftLimit);
+                backboardSide = -1; 
+            } else {
+                const leftLimit = prevHoop.x + minShift;
+                const rightLimit = Math.min(width - HOOP_MARGIN, prevHoop.x + maxShift);
+                newX = leftLimit + Math.random() * (rightLimit - leftLimit);
+                backboardSide = 1; 
+            }
+
+            if (type === HOOP_TYPE.BACKBOARD) {
+                const safeDistance = HOOP_RADIUS + 25; 
+                if (backboardSide === -1) {
+                    if (newX - safeDistance < 0) newX = safeDistance + 5; 
+                } else {
+                    if (newX + safeDistance > width) newX = width - safeDistance - 5; 
+                }
+            }
+
+            // [ИЗМЕНЕНИЕ 11] Проверка дистанции между центрами
+            const dx = newX - prevHoop.x;
+            const dy = newY - prevHoop.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            // Если расстояние больше 1.5 диаметра - позиция валидна
+            if (dist > HOOP_DIAMETER * 1.5) {
+                validPosition = true;
+            }
+
+            attempts++;
+
+        } while (!validPosition && attempts < MAX_ATTEMPTS);
+
+        // Если даже после 20 попыток не нашли (крайне маловероятно), ставим просто выше
+        if (!validPosition) {
+            newY = prevHoop.y - height * 0.3;
+            newX = width / 2; 
         }
 
         addHoop(newX, newY, type, backboardSide);
@@ -180,10 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ball.vx = 0;
         ball.vy = 0;
         ball.isSitting = true;
-        
-        // Сброс флагов при ресете
         shotTouchedRim = false;
-        
         cameraTargetY = -h.y + height * 0.7;
     }
 
@@ -265,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const distToCenter = Math.abs(ball.x - h.x);
                 const distY = Math.abs(ball.y - h.y);
                 
-                // Слабый магнетизм
                 if (distToCenter < 15 && distY < 15) {
                      ball.x += (h.x - ball.x) * 0.05 * dt;
                 }
@@ -276,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 checkRimCollision(h);
 
-                // Попадание
                 if (ball.vy > 0 && 
                     ball.y > h.y - 15 && 
                     ball.y < h.y + 25 &&
@@ -319,8 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const dist = Math.sqrt(dx*dx + dy*dy);
             
             if (dist < BALL_RADIUS + 5) {
-                // [ИЗМЕНЕНИЕ 10] Если коснулись обода, помечаем бросок как "грязный"
-                // Но только если мы еще не сидим в кольце (чтобы не сбрасывать при спавне)
                 if (!ball.isSitting) {
                     shotTouchedRim = true;
                 }
@@ -342,34 +374,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleScore(targetHoop) {
-        const basePoints = targetHoop ? targetHoop.points : 1;
-        let totalPoints = basePoints;
-        let isSwish = false;
+        let pointsToAdd = 0;
+        let flameIntensity = 0; 
 
-        // [ИЗМЕНЕНИЕ 10] Логика Swish Combo
         if (!shotTouchedRim) {
-            // Чистый бросок!
-            isSwish = true;
-            const bonus = Math.pow(2, swishCombo); // 1, 2, 4, 8...
-            totalPoints += bonus;
-            
-            // Текстовый эффект
-            createFloatingText(ball.x, ball.y - 50, `SWISH! +${bonus}`, '#FFD700');
-            if (swishCombo > 1) {
-                createFloatingText(ball.x, ball.y - 80, `COMBO x${swishCombo}`, '#FF4081');
-            }
-
+            let bonus = Math.min(swishCombo + 1, 5);
+            pointsToAdd = bonus;
+            flameIntensity = bonus;
             swishCombo++;
         } else {
-            // Грязный бросок
+            pointsToAdd = targetHoop ? targetHoop.points : 1;
             swishCombo = 0;
-            createFloatingText(ball.x, ball.y - 50, `+${basePoints}`, '#FFFFFF');
+            flameIntensity = 0;
         }
 
-        score += totalPoints;
+        score += pointsToAdd;
+
+        createFloatingText(ball.x, ball.y - 50, `+${pointsToAdd}`, flameIntensity);
 
         updateScoreUI();
-        createParticles(ball.x, ball.y, isSwish ? 40 : 20); // Больше частиц при Swish
+        createParticles(ball.x, ball.y, 25);
         
         currentHoopIndex++;
         
@@ -390,8 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function recoverBall(index) {
-        // [ИЗМЕНЕНИЕ 10] Сброс комбо при промахе/спасении
-        swishCombo = 0;
+        swishCombo = 0; 
         
         currentHoopIndex = index;
         ball.isSitting = true;
@@ -410,7 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DRAWING ---
 
     function draw() {
+        // [ИЗМЕНЕНИЕ 12] Очищаем область логического размера
+        // Так как контекст масштабирован, width/height (логические) это то, что нужно.
         ctx.clearRect(0, 0, width, height);
+        
         ctx.save();
         ctx.translate(0, cameraY);
 
@@ -420,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawBall();
         hoops.forEach((h, i) => drawHoopFront(h, i === currentHoopIndex));
         drawParticles();
-        drawFloatingTexts(); // Рисуем текст
+        drawFloatingTexts();
 
         ctx.restore();
     }
@@ -530,16 +556,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // [ИЗМЕНЕНИЕ 10] Функция для плавающего текста
-    function createFloatingText(x, y, text, color) {
+    function createFloatingText(x, y, text, flameIntensity) {
         particles.push({
             type: 'text',
             text: text,
             x: x,
             y: y,
-            vy: -2, // Летит вверх
+            vy: -2,
             life: 1.0,
-            color: color
+            flameIntensity: flameIntensity
         });
     }
 
@@ -554,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.life -= 0.03 * dt;
             } else if (p.type === 'text') {
                 p.y += p.vy * dt;
-                p.life -= 0.015 * dt; // Текст живет дольше
+                p.life -= 0.015 * dt;
             }
 
             if(p.life <= 0) particles.splice(i, 1);
@@ -579,12 +604,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (p.type === 'text') {
                 ctx.save();
                 ctx.globalAlpha = p.life;
-                ctx.fillStyle = p.color;
-                ctx.font = 'bold 30px Arial';
                 ctx.textAlign = 'center';
-                // Тень текста
-                ctx.shadowColor = 'black';
-                ctx.shadowBlur = 4;
+                ctx.font = 'bold 35px Arial';
+
+                if (p.flameIntensity > 0) {
+                    ctx.fillStyle = '#FF3333'; 
+                    ctx.shadowColor = '#FFD700'; 
+                    let blur = p.flameIntensity * 10 - 5; 
+                    if (p.flameIntensity >= 5) {
+                         blur = 50 + Math.sin(Date.now() / 100) * 15;
+                    }
+                    if (blur < 5) blur = 5;
+                    ctx.shadowBlur = blur;
+                } else {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.shadowColor = 'black';
+                    ctx.shadowBlur = 4;
+                }
+                
                 ctx.fillText(p.text, p.x, p.y);
                 ctx.restore();
             }
@@ -638,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ball.vy = finalDy * DRAG_POWER;
         ball.isSitting = false;
         
-        // [ИЗМЕНЕНИЕ 10] Сброс флага "касания" при начале броска
         shotTouchedRim = false;
     }
 
@@ -661,6 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('touchend', endDrag);
 
     restartButton.addEventListener('click', initGame);
+    topRestartBtn.addEventListener('click', initGame); // [ИЗМЕНЕНИЕ 13]
     window.addEventListener('resize', () => { resize(); });
 
     initGame();
