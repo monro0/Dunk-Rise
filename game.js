@@ -95,6 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
         hoops = [];
         
         addHoop(width / 2, height * 0.75, HOOP_TYPE.NORMAL);
+        hoops[0].isConquered = true; 
+
         spawnNewHoop(hoops[0]);
 
         currentHoopIndex = 0;
@@ -116,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             targetScale: 1,
             moveSpeed: 1.5, 
             moveDir: Math.random() > 0.5 ? 1 : -1,
+            isConquered: false 
         });
     }
 
@@ -208,27 +211,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const midX = (startHoop.x + endHoop.x) / 2;
         const midY = (startHoop.y + endHoop.y) / 2;
 
-        // [ИЗМЕНЕНИЕ 27] Балансировка ветра
-        // Порог: 5 очков. Шанс: 35%
         if (score >= 5 && Math.random() < 0.35) {
             
-            // Определение силы ветра (3 уровня)
             const strengthRoll = Math.random();
             let forceMult = 1.0;
             let visualSpeedMult = 1.0;
 
             if (strengthRoll < 0.33) {
-                // Слабый
                 forceMult = 0.5; 
                 visualSpeedMult = 0.5;
             } else if (strengthRoll < 0.66) {
-                // Средний
                 forceMult = 1.0;
                 visualSpeedMult = 1.0;
             } else {
-                // Сильный
                 forceMult = 1.5;
-                visualSpeedMult = 2.2; // Визуально намного быстрее
+                visualSpeedMult = 2.2; 
             }
 
             const baseForce = 0.15;
@@ -244,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     x: Math.random() * windW,
                     y: Math.random() * windH,
                     w: 20 + Math.random() * 30,
-                    // Скорость зависит от силы ветра
                     speed: (3 + Math.random() * 4) * visualSpeedMult, 
                     alpha: 0.1 + Math.random() * 0.4 
                 });
@@ -394,6 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkBackboardCollision(h);
                 }
 
+                // [ИЗМЕНЕНИЕ 31] Удалено checkHoopBottomCollision (мяч пролетает сквозь дно)
+
                 checkRimCollision(h);
 
                 if (ball.vy > 0 && 
@@ -451,6 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ball.vx -= (1 + bounceFactor) * vDotN * nx;
                 ball.vy -= (1 + bounceFactor) * vDotN * ny;
                 
+                // [ИЗМЕНЕНИЕ 31] Удалена проверка удара снизу (мяч может пролететь между точками)
+                
                 const overlap = (BALL_RADIUS + 5) - dist;
                 ball.x += nx * overlap;
                 ball.y += ny * overlap;
@@ -459,6 +459,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleScore(targetHoop) {
+        if (targetHoop.isConquered) {
+            recoverBall(hoops.indexOf(targetHoop));
+            return;
+        }
+
+        targetHoop.isConquered = true;
+
         let pointsToAdd = 0;
         let flameIntensity = 0; 
 
