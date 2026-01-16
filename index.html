@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dunk Shot</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    
+    <!-- Обертка для симуляции мобильного экрана -->
+    <div id="game-container">
+        <!-- Холст -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Интерфейс -->
+        <div id="ui-container">
+            <div id="score">0</div>
+        </div>
+
+        <!-- Экран проигрыша -->
+        <div id="gameOverScreen" class="hidden">
+            <div class="modal">
+                <h1>Game Over</h1>
+                <div id="finalScore"></div>
+                <button id="restartButton">Играть снова</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
