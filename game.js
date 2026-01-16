@@ -56,14 +56,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE ---
 
+    // [ИЗМЕНЕНИЕ 16] Исправленная функция ресайза
     function resize() {
         const dpr = window.devicePixelRatio || 1;
+        
+        // Обновляем логические размеры
         width = container.clientWidth;
         height = container.clientHeight;
+
+        // Обновляем физические размеры канваса
         canvas.width = width * dpr;
         canvas.height = height * dpr;
+
+        // CSS размеры
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
+
+        // ВАЖНО: Сбрасываем трансформацию перед применением нового масштаба
+        // Иначе при каждом ресайзе масштаб будет умножаться сам на себя
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
     }
 
@@ -424,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isDragging && ball.isSitting) drawTrajectory();
 
-        // [ИЗМЕНЕНИЕ 15] Передаем индекс для цветовой кодировки
         hoops.forEach((h, i) => drawHoopBack(h, i));
         drawBall();
         hoops.forEach((h, i) => drawHoopFront(h, i));
@@ -434,7 +444,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    // [ИЗМЕНЕНИЕ 14] Умная траектория с отскоком
     function drawTrajectory() {
         const dx = dragStart.x - dragCurrent.x;
         const dy = dragStart.y - dragCurrent.y;
@@ -451,19 +460,17 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.beginPath();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         let sx = ball.x, sy = ball.y;
-        let svx = vx; // Локальная скорость X для симуляции
+        let svx = vx;
         let svy = vy;
         
-        // Симулируем 20 точек
         for(let i=0; i<20; i++) {
             sx += svx * 2;
             sy += svy * 2;
             svy += GRAVITY * 2;
 
-            // Логика отскока от стен
             if (sx < BALL_RADIUS) {
                 sx = BALL_RADIUS;
-                svx = -svx * 0.6; // Теряем энергию при отскоке
+                svx = -svx * 0.6;
             } else if (sx > width - BALL_RADIUS) {
                 sx = width - BALL_RADIUS;
                 svx = -svx * 0.6;
@@ -492,30 +499,25 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.translate(h.x, h.y);
         ctx.scale(h.scale, h.scale);
         
-        // [ИЗМЕНЕНИЕ 15] Рисуем сетку
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.lineWidth = 1.5;
         
-        // Рисуем простую сетку (трапеция)
         const topW = HOOP_RADIUS;
         const botW = HOOP_RADIUS * 0.6;
         const netH = 50;
 
-        // Линии слева направо
         for(let i=0; i<=4; i++) {
             let x1 = -topW + (topW*2 * i/4);
             let x2 = -botW + (botW*2 * i/4);
             ctx.moveTo(x1, 0);
             ctx.lineTo(x2, netH);
         }
-        // Поперечные линии (условно, для объема)
         ctx.moveTo(-topW*0.8, netH*0.3); ctx.lineTo(topW*0.8, netH*0.3);
         ctx.moveTo(-topW*0.6, netH*0.6); ctx.lineTo(topW*0.6, netH*0.6);
         ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH);
         ctx.stroke();
 
-        // Щит
         if (h.type === HOOP_TYPE.BACKBOARD) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
@@ -531,7 +533,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.stroke();
         }
 
-        // Задняя часть обода (всегда темнее)
         ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -543,7 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    // [ИЗМЕНЕНИЕ 15] Цветовая кодировка
     function drawHoopFront(h, index) {
         if(h.scale <= 0) return;
         ctx.save();
@@ -551,11 +551,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.scale(h.scale, h.scale);
         ctx.lineWidth = 6;
         
-        let color = '#9E9E9E'; // По умолчанию СЕРЫЙ (текущее кольцо)
+        let color = '#9E9E9E'; 
 
-        // Если это СЛЕДУЮЩЕЕ кольцо (цель)
         if (index === currentHoopIndex + 1) {
-            color = '#FF5722'; // ЯРКО-ОРАНЖЕВЫЙ
+            color = '#FF5722'; 
         } 
         
         ctx.strokeStyle = color;
