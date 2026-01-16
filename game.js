@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
         MOVING: 'moving'        
     };
 
+    const OBSTACLE_TYPE = {
+        NONE: 'none',
+        WIND: 'wind',
+        // WALL: 'wall' 
+    };
+
     // --- STATE ---
     let width, height;
     let score = 0;
@@ -48,6 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let ball = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true };
     let hoops = [];
     let particles = [];
+    
+    let currentObstacle = null; 
+
     let currentHoopIndex = 0;
 
     let isDragging = false;
@@ -56,24 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE ---
 
-    // [ИЗМЕНЕНИЕ 16] Исправленная функция ресайза
     function resize() {
         const dpr = window.devicePixelRatio || 1;
-        
-        // Обновляем логические размеры
         width = container.clientWidth;
         height = container.clientHeight;
-
-        // Обновляем физические размеры канваса
         canvas.width = width * dpr;
         canvas.height = height * dpr;
-
-        // CSS размеры
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
-
-        // ВАЖНО: Сбрасываем трансформацию перед применением нового масштаба
-        // Иначе при каждом ресайзе масштаб будет умножаться сам на себя
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
     }
@@ -85,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         swishCombo = 0;
         shotTouchedRim = false;
+        currentObstacle = null;
 
         updateScoreUI();
         gameOverScreen.classList.add('hidden');
@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
             targetScale: 1,
             moveSpeed: 1.5, 
             moveDir: Math.random() > 0.5 ? 1 : -1,
-            points: type === HOOP_TYPE.NORMAL ? 1 : (type === HOOP_TYPE.BACKBOARD ? 2 : 3)
         });
     }
 
@@ -126,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let attempts = 0;
         const MAX_ATTEMPTS = 20;
         let validPosition = false;
-
         let newX, newY, type, backboardSide;
 
         do {
@@ -189,22 +187,80 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dist > HOOP_DIAMETER * 1.5) {
                 validPosition = true;
             }
-
             attempts++;
-
         } while (!validPosition && attempts < MAX_ATTEMPTS);
 
-        if (!validPosition) {
-            newY = prevHoop.y - height * 0.3;
-            newX = width / 2; 
-        }
+        if (!validPosition) { newY = prevHoop.y - height * 0.3; newX = width / 2; }
 
         addHoop(newX, newY, type, backboardSide);
+
+        generateObstacle(prevHoop, {x: newX, y: newY});
 
         if (hoops.length > 7) {
             hoops.shift();
             currentHoopIndex--;
         }
+    }
+
+    function generateObstacle(startHoop, endHoop) {
+        currentObstacle = null;
+        
+        const midX = (startHoop.x + endHoop.x) / 2;
+        const midY = (startHoop.y + endHoop.y) / 2;
+
+        // [ИЗМЕНЕНИЕ 27] Балансировка ветра
+        // Порог: 5 очков. Шанс: 35%
+        if (score >= 5 && Math.random() < 0.35) {
+            
+            // Определение силы ветра (3 уровня)
+            const strengthRoll = Math.random();
+            let forceMult = 1.0;
+            let visualSpeedMult = 1.0;
+
+            if (strengthRoll < 0.33) {
+                // Слабый
+                forceMult = 0.5; 
+                visualSpeedMult = 0.5;
+            } else if (strengthRoll < 0.66) {
+                // Средний
+                forceMult = 1.0;
+                visualSpeedMult = 1.0;
+            } else {
+                // Сильный
+                forceMult = 1.5;
+                visualSpeedMult = 2.2; // Визуально намного быстрее
+            }
+
+            const baseForce = 0.15;
+            const finalForce = baseForce * forceMult;
+
+            const windW = width;
+            const windH = 150;
+            const dir = Math.random() > 0.5 ? 1 : -1;
+            
+            let windStreaks = [];
+            for(let i=0; i<20; i++) {
+                windStreaks.push({
+                    x: Math.random() * windW,
+                    y: Math.random() * windH,
+                    w: 20 + Math.random() * 30,
+                    // Скорость зависит от силы ветра
+                    speed: (3 + Math.random() * 4) * visualSpeedMult, 
+                    alpha: 0.1 + Math.random() * 0.4 
+                });
+            }
+
+            currentObstacle = {
+                type: OBSTACLE_TYPE.WIND,
+                x: width / 2, 
+                y: midY,
+                w: windW,
+                h: windH,
+                dir: dir,
+                force: finalForce,
+                streaks: windStreaks
+            };
+        } 
     }
 
     function resetBallToHoop(index) {
@@ -253,11 +309,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        if (currentObstacle && currentObstacle.type === OBSTACLE_TYPE.WIND) {
+            currentObstacle.streaks.forEach(s => {
+                s.x += s.speed * currentObstacle.dir * dt;
+                
+                if (currentObstacle.dir > 0 && s.x > currentObstacle.w) {
+                    s.x = -s.w;
+                    s.y = Math.random() * currentObstacle.h;
+                }
+                if (currentObstacle.dir < 0 && s.x < -s.w) {
+                    s.x = currentObstacle.w;
+                    s.y = Math.random() * currentObstacle.h;
+                }
+            });
+        }
+
         if (!ball.isSitting) {
             ball.vy += GRAVITY * dt;
             ball.x += ball.vx * dt;
             ball.y += ball.vy * dt;
             ball.angle += ball.vx * 0.05 * dt;
+
+            checkObstacleCollisions(dt);
 
             if (ball.x < BALL_RADIUS) {
                 ball.x = BALL_RADIUS;
@@ -285,6 +358,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateParticles(dt);
+    }
+
+    function checkObstacleCollisions(dt) {
+        if (!currentObstacle) return;
+
+        if (currentObstacle.type === OBSTACLE_TYPE.WIND) {
+            const left = currentObstacle.x - currentObstacle.w / 2;
+            const right = currentObstacle.x + currentObstacle.w / 2;
+            const top = currentObstacle.y - currentObstacle.h / 2;
+            const bottom = currentObstacle.y + currentObstacle.h / 2;
+
+            if (ball.x > left && ball.x < right && ball.y > top && ball.y < bottom) {
+                ball.vx += currentObstacle.force * currentObstacle.dir * dt;
+                ball.angle += currentObstacle.dir * 0.05 * dt;
+            }
+        } 
     }
 
     function checkCollisions(dt) {
@@ -379,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
             flameIntensity = bonus;
             swishCombo++;
         } else {
-            pointsToAdd = targetHoop ? targetHoop.points : 1;
+            pointsToAdd = 1;
             swishCombo = 0;
             flameIntensity = 0;
         }
@@ -433,6 +522,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.save();
         ctx.translate(0, cameraY);
 
+        drawObstacle();
+
         if (isDragging && ball.isSitting) drawTrajectory();
 
         hoops.forEach((h, i) => drawHoopBack(h, i));
@@ -442,6 +533,25 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFloatingTexts();
 
         ctx.restore();
+    }
+
+    function drawObstacle() {
+        if (!currentObstacle) return;
+
+        if (currentObstacle.type === OBSTACLE_TYPE.WIND) {
+            const left = currentObstacle.x - currentObstacle.w / 2;
+            const top = currentObstacle.y - currentObstacle.h / 2;
+
+            currentObstacle.streaks.forEach(s => {
+                ctx.save();
+                ctx.globalAlpha = s.alpha;
+                ctx.fillStyle = '#CCCCCC';
+                ctx.beginPath();
+                ctx.rect(left + s.x, top + s.y, s.w, 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        } 
     }
 
     function drawTrajectory() {
