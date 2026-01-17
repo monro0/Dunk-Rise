@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Второй шанс
     const adButton = document.getElementById('adButton');
     const secondChanceTimerEl = document.getElementById('secondChanceTimer');
+    const closeSecondChanceBtn = document.getElementById('closeSecondChance'); // [ИЗМЕНЕНИЕ]
 
     // --- CONFIG ---
     const GRAVITY = 0.6;
@@ -146,17 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         do {
             type = HOOP_TYPE.NORMAL;
-            
-            // 1. Правило остывания (если предыдущее было сложным - ставим обычное)
-            if (prevHoop.type !== HOOP_TYPE.NORMAL) {
-                type = HOOP_TYPE.NORMAL;
-            } 
-            // [ИЗМЕНЕНИЕ 27] 2. Проверка на SPIKED (Порог 20, Шанс 30%)
-            else if (score >= 20 && Math.random() < 0.3) {
+            if (score >= 20 && Math.random() < 0.3) {
                 type = HOOP_TYPE.SPIKED;
-            } 
-            // 3. Стандартная рулетка
-            else {
+            } else if (prevHoop.type !== HOOP_TYPE.NORMAL) {
+                type = HOOP_TYPE.NORMAL;
+            } else {
                 const rand = Math.random();
                 if (score >= 10) {
                     if (rand < 0.5) type = HOOP_TYPE.NORMAL;
@@ -233,22 +228,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const midX = (startHoop.x + endHoop.x) / 2;
         const midY = (startHoop.y + endHoop.y) / 2;
 
-        if (score >= 15 && Math.random() < 0.35) {
+        if (score >= 15 && Math.random() < 0.30) {
             
             const strengthRoll = Math.random();
             let forceMult = 1.0;
             let visualSpeedMult = 1.0;
 
-            if (strengthRoll < 0.33) {
+            if (strengthRoll < 0.5) {
                 forceMult = 0.5; 
                 visualSpeedMult = 0.5;
-            } else if (strengthRoll < 0.66) {
+            } else {
                 forceMult = 1.0;
                 visualSpeedMult = 1.0;
-            } else {
-                forceMult = 1.5;
-                visualSpeedMult = 2.2; 
-            }
+            } 
 
             const baseForce = 0.15;
             const finalForce = baseForce * forceMult;
@@ -949,6 +941,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(scoreElement) scoreElement.innerText = score;
     }
 
+    // [ИЗМЕНЕНИЕ] Функция закрытия окна "Второй шанс"
+    function closeSecondChance() {
+        clearInterval(reviveTimerInterval);
+        showFinalGameOver();
+    }
+
     canvas.addEventListener('mousedown', startDrag);
     window.addEventListener('mousemove', moveDrag);
     window.addEventListener('mouseup', endDrag);
@@ -960,6 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
     restartButton.addEventListener('click', initGame);
     topRestartBtn.addEventListener('click', initGame);
     if(adButton) adButton.addEventListener('click', showRewardedAd);
+    if(closeSecondChanceBtn) closeSecondChanceBtn.addEventListener('click', closeSecondChance); // [ИЗМЕНЕНИЕ]
 
     window.addEventListener('resize', () => { resize(); });
 
