@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const topRestartBtn = document.getElementById('topRestartBtn');
     
     // High Score
-    const highScoreElement = document.getElementById('high-score-value'); // [ИЗМЕНЕНИЕ]
+    const highScoreElement = document.getElementById('high-score-value');
 
     // Второй шанс
     const adButton = document.getElementById('adButton');
@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DRAG_POWER = 0.16;
     const MAX_DRAG = 220;
     const BALL_RADIUS = 22;
+    
     const HOOP_RADIUS = 46; 
     const HOOP_DIAMETER = HOOP_RADIUS * 2;
     const HOOP_MARGIN = 50; 
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- STATE ---
     let width, height;
     let score = 0;
-    let highScore = 0; // [ИЗМЕНЕНИЕ] Переменная рекорда
+    let highScore = 0;
     let isGameOver = false;
     let lastTime = 0;
 
@@ -69,11 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let reviveTimerInterval = null;
 
     let ball = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true };
+    // Увеличенный буфер следа для более длинного хвоста
+    let ballTrail = [];
+
     let hoops = [];
     let particles = [];
     
     let currentObstacle = null; 
-
     let currentHoopIndex = 0;
 
     let isDragging = false;
@@ -99,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         isGameOver = false;
         score = 0;
         
-        // [ИЗМЕНЕНИЕ] Загрузка рекорда при старте
         const savedScore = localStorage.getItem('dunkRiseHighScore');
         if (savedScore) {
             highScore = parseInt(savedScore, 10);
@@ -115,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameOverScreen.classList.add('hidden');
         if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
         particles = [];
+        ballTrail = []; 
         cameraY = 0;
         cameraTargetY = 0;
 
@@ -128,10 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentHoopIndex = 0;
         resetBallToHoop(0);
 
-        if (!lastTime) {
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
-        }
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
     }
 
     function addHoop(x, y, type = HOOP_TYPE.NORMAL, backboardSide = 0) {
@@ -159,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         do {
             type = HOOP_TYPE.NORMAL;
             
-            // [БАЛАНС] Шипы: после 20 очков, 30% шанс
             if (score >= 20 && Math.random() < 0.3) {
                 type = HOOP_TYPE.SPIKED;
             } else if (prevHoop.type !== HOOP_TYPE.NORMAL) {
@@ -174,10 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (rand < 0.7) type = HOOP_TYPE.NORMAL;
                     else type = HOOP_TYPE.BACKBOARD;
                 }
-            }
-
-            if (type === HOOP_TYPE.SPIKED) {
-                // Сбрасываем лишние
             }
 
             const minH = height * 0.25; 
@@ -245,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const midX = (startHoop.x + endHoop.x) / 2;
         const midY = (startHoop.y + endHoop.y) / 2;
 
-        // [БАЛАНС] Ветер: после 15 очков, 30% шанс
         if (score >= 15 && Math.random() < 0.30) {
             
             const strengthRoll = Math.random();
@@ -308,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ball.vy = 0;
         ball.isSitting = true;
         ball.visible = true; 
+        ballTrail = []; 
         shotTouchedRim = false;
         cameraTargetY = -h.y + height * 0.7;
     }
@@ -366,6 +362,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ball.x += ball.vx * dt;
             ball.y += ball.vy * dt;
             ball.angle += ball.vx * 0.05 * dt;
+            
+            // Обновление следа
+            if (ball.visible) {
+                ballTrail.push({x: ball.x, y: ball.y});
+                // Увеличенная длина следа
+                if (ballTrail.length > 30) {
+                    ballTrail.shift();
+                }
+            }
 
             checkObstacleCollisions(dt);
 
@@ -392,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (h && h.type === HOOP_TYPE.MOVING) {
                 ball.y += (h.y - ball.y) * 0.2 * dt;
             }
+            if (ballTrail.length > 0) ballTrail = [];
         }
 
         updateParticles(dt);
@@ -560,6 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ball.x = targetHoop.x;
         }
         ball.y = targetHoop.y;
+        ballTrail = []; 
         
         const h = hoops[currentHoopIndex];
         cameraTargetY = -h.y + height * 0.7;
@@ -581,6 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
              ball.x = h.x;
         }
         ball.y = h.y;
+        ballTrail = []; 
 
         cameraTargetY = -h.y + height * 0.7;
         createParticles(ball.x, ball.y, 10);
@@ -595,10 +603,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawObstacle();
 
+        // 1. Рисуем след (за мячом)
+        if (!ball.isSitting && ball.visible) {
+             drawTrail();
+        }
+
         if (isDragging && ball.isSitting && ball.visible) drawTrajectory();
 
         hoops.forEach((h, i) => drawHoopBack(h, i));
         
+        // 2. Рисуем сам мяч
         if (ball.visible) drawBall();
         
         hoops.forEach((h, i) => drawHoopFront(h, i));
@@ -606,6 +620,28 @@ document.addEventListener('DOMContentLoaded', () => {
         drawFloatingTexts();
 
         ctx.restore();
+    }
+
+    // [ОБНОВЛЕНО] Улучшенный огненный след
+    function drawTrail() {
+        if (ballTrail.length < 2) return;
+
+        for (let i = 0; i < ballTrail.length; i++) {
+            const pos = ballTrail[i];
+            const ratio = i / ballTrail.length; 
+            const size = BALL_RADIUS * ratio * 0.8; // Сужается к хвосту
+            const alpha = ratio * 0.5; 
+
+            ctx.beginPath();
+            // Градиент от красного (в хвосте) к оранжево-желтому (у мяча)
+            const r = 255;
+            const g = Math.floor(ratio * 200); // 0 -> 200
+            const b = 0;
+            
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     function drawObstacle() {
@@ -665,14 +701,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // [ОБНОВЛЕНО] Вращающийся баскетбольный мяч с правильными швами
     function drawBall() {
         ctx.save();
         ctx.translate(ball.x, ball.y);
-        ctx.rotate(ball.angle);
-        ctx.font = "45px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🏀", 0, 5);
+        ctx.rotate(ball.angle); // ВРАЩЕНИЕ КАНВАСА
+
+        // 1. Оранжевое тело
+        const gradient = ctx.createRadialGradient(
+            -BALL_RADIUS / 3, -BALL_RADIUS / 3, BALL_RADIUS / 4, 
+            0, 0, BALL_RADIUS
+        );
+        gradient.addColorStop(0, '#FFB74D'); 
+        gradient.addColorStop(1, '#FF9800'); // Сочный оранжевый
+
+        ctx.beginPath();
+        ctx.arc(0, 0, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // 2. Изогнутые линии (швы)
+        ctx.strokeStyle = '#2e1a0f'; // Темно-коричневый/черный
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+
+        // Вертикальная изогнутая линия
+        ctx.beginPath();
+        ctx.moveTo(0, -BALL_RADIUS);
+        ctx.quadraticCurveTo(BALL_RADIUS * 0.4, 0, 0, BALL_RADIUS);
+        ctx.stroke();
+
+        // Горизонтальная изогнутая линия
+        ctx.beginPath();
+        ctx.moveTo(-BALL_RADIUS, 0);
+        ctx.quadraticCurveTo(0, BALL_RADIUS * 0.4, BALL_RADIUS, 0);
+        ctx.stroke();
+
+        // "Кольцевая" линия (придает характерный вид мяча)
+        ctx.beginPath();
+        ctx.ellipse(0, 0, BALL_RADIUS * 0.65, BALL_RADIUS, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 3. Контур
+        ctx.strokeStyle = '#BF360C';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+
         ctx.restore();
     }
 
@@ -682,13 +758,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.translate(h.x, h.y);
         ctx.scale(h.scale, h.scale);
         
+        if (h.type === HOOP_TYPE.BACKBOARD) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            
+            const boardX = (HOOP_RADIUS + 10) * h.backboardSide;
+            ctx.fillRect(boardX - 5, -80, 10, 80);
+            ctx.strokeRect(boardX - 5, -80, 10, 80);
+            
+            ctx.beginPath();
+            ctx.moveTo(HOOP_RADIUS * h.backboardSide * 0.5, 0);
+            ctx.lineTo(boardX, -20);
+            ctx.stroke();
+        }
+
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         
         const topW = HOOP_RADIUS;
         const botW = HOOP_RADIUS * 0.6;
-        const netH = 50;
+        const netH = 55;
 
         for(let i=0; i<=4; i++) {
             let x1 = -topW + (topW*2 * i/4);
@@ -701,29 +792,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH);
         ctx.stroke();
 
-        if (h.type === HOOP_TYPE.BACKBOARD) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.lineWidth = 2;
-            
-            const boardX = (HOOP_RADIUS + 10) * h.backboardSide;
-            ctx.fillRect(boardX - 5, -80, 10, 80);
-            ctx.strokeRect(boardX - 5, -80, 10, 80);
-            
-            ctx.beginPath();
-            ctx.moveTo(HOOP_RADIUS * h.backboardSide, 0);
-            ctx.lineTo(boardX, -20);
-            ctx.stroke();
-        }
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-HOOP_RADIUS+10, 0);
-        ctx.lineTo(-HOOP_RADIUS+20, 60);
-        ctx.lineTo(HOOP_RADIUS-20, 60);
-        ctx.lineTo(HOOP_RADIUS-10, 0);
-        ctx.stroke();
         ctx.restore();
     }
 
@@ -732,15 +800,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.save();
         ctx.translate(h.x, h.y);
         ctx.scale(h.scale, h.scale);
-        ctx.lineWidth = 6;
         
-        let color = '#9E9E9E'; 
-
+        let color = '#aeaeae'; 
         if (index === currentHoopIndex + 1) {
             color = '#FF5722'; 
         } 
         
         ctx.strokeStyle = color;
+        ctx.lineWidth = 8; 
         ctx.beginPath();
         ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI*2);
         ctx.stroke();
@@ -929,11 +996,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Функция-заглушка для рекламы
     function showRewardedAd() {
         clearInterval(reviveTimerInterval);
         console.log("Showing Ad...");
-        // Симуляция
         setTimeout(() => {
             reviveGame();
         }, 500);
@@ -953,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
         finalScoreElement.innerText = `Счёт: ${score}`;
-        // [ИЗМЕНЕНИЕ] Сохранение рекорда при окончательном проигрыше
+        
         if (score > highScore) {
             highScore = score;
             localStorage.setItem('dunkRiseHighScore', highScore);
