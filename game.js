@@ -151,8 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (prevHoop.type !== HOOP_TYPE.NORMAL) {
                 type = HOOP_TYPE.NORMAL;
             } 
-            // [ИЗМЕНЕНИЕ 27] 2. Проверка на SPIKED (Порог 25, Шанс 20%)
-            else if (score >= 25 && Math.random() < 0.2) {
+            // [ИЗМЕНЕНИЕ 27] 2. Проверка на SPIKED (Порог 20, Шанс 30%)
+            else if (score >= 20 && Math.random() < 0.3) {
                 type = HOOP_TYPE.SPIKED;
             } 
             // 3. Стандартная рулетка
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const midX = (startHoop.x + endHoop.x) / 2;
         const midY = (startHoop.y + endHoop.y) / 2;
 
-        if (score >= 5 && Math.random() < 0.35) {
+        if (score >= 15 && Math.random() < 0.35) {
             
             const strengthRoll = Math.random();
             let forceMult = 1.0;
