@@ -13,10 +13,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreElement = document.getElementById('score');
+    
+    // Экраны
     const gameOverScreen = document.getElementById('gameOverScreen');
+    const secondChanceScreen = document.getElementById('secondChanceScreen'); 
+    
+    // Элементы
     const finalScoreElement = document.getElementById('finalScore');
     const restartButton = document.getElementById('restartButton');
     const topRestartBtn = document.getElementById('topRestartBtn');
+    
+    // Второй шанс
+    const adButton = document.getElementById('adButton');
+    const secondChanceTimerEl = document.getElementById('secondChanceTimer');
 
     // --- CONFIG ---
     const GRAVITY = 0.6;
@@ -30,13 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const HOOP_TYPE = {
         NORMAL: 'normal',
         BACKBOARD: 'backboard', 
-        MOVING: 'moving'        
+        MOVING: 'moving',
+        SPIKED: 'spiked'
     };
 
     const OBSTACLE_TYPE = {
         NONE: 'none',
         WIND: 'wind',
-        // WALL: 'wall' 
     };
 
     // --- STATE ---
@@ -51,7 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let cameraY = 0;
     let cameraTargetY = 0;
 
-    let ball = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true };
+    let hasUsedRevive = false;
+    let reviveTimerInterval = null;
+
+    let ball = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true };
     let hoops = [];
     let particles = [];
     
@@ -85,9 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
         swishCombo = 0;
         shotTouchedRim = false;
         currentObstacle = null;
+        hasUsedRevive = false;
 
         updateScoreUI();
         gameOverScreen.classList.add('hidden');
+        if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
         particles = [];
         cameraY = 0;
         cameraTargetY = 0;
@@ -132,9 +146,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         do {
             type = HOOP_TYPE.NORMAL;
+            
+            // 1. Правило остывания (если предыдущее было сложным - ставим обычное)
             if (prevHoop.type !== HOOP_TYPE.NORMAL) {
                 type = HOOP_TYPE.NORMAL;
-            } else {
+            } 
+            // [ИЗМЕНЕНИЕ 27] 2. Проверка на SPIKED (Порог 25, Шанс 20%)
+            else if (score >= 25 && Math.random() < 0.2) {
+                type = HOOP_TYPE.SPIKED;
+            } 
+            // 3. Стандартная рулетка
+            else {
                 const rand = Math.random();
                 if (score >= 10) {
                     if (rand < 0.5) type = HOOP_TYPE.NORMAL;
@@ -231,9 +253,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const baseForce = 0.15;
             const finalForce = baseForce * forceMult;
 
+            const directionToTarget = endHoop.x > startHoop.x ? 1 : -1;
+            let dir = 1;
+            
+            if (Math.random() < 0.7) {
+                dir = -directionToTarget;
+            } else {
+                dir = directionToTarget;
+            }
+
             const windW = width;
             const windH = 150;
-            const dir = Math.random() > 0.5 ? 1 : -1;
             
             let windStreaks = [];
             for(let i=0; i<20; i++) {
@@ -267,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ball.vx = 0;
         ball.vy = 0;
         ball.isSitting = true;
+        ball.visible = true; 
         shotTouchedRim = false;
         cameraTargetY = -h.y + height * 0.7;
     }
@@ -339,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let safeIndex = Math.max(0, currentHoopIndex - 1);
             let safeRing = hoops[safeIndex];
             if (safeRing && ball.y + cameraY > (safeRing.y + cameraY) + 350) {
-                endGame();
+                triggerDeathSequence();
             }
 
             checkCollisions(dt);
@@ -379,9 +410,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idx >= 0 && idx < hoops.length) {
                 let h = hoops[idx];
                 
+                if (h.type === HOOP_TYPE.SPIKED && !h.isConquered && h === hoops[currentHoopIndex + 1]) {
+                    const rims = [h.x - HOOP_RADIUS, h.x + HOOP_RADIUS];
+                    const rimY = h.y;
+                    let hitSpike = false;
+
+                    rims.forEach(rx => {
+                        const dx = ball.x - rx;
+                        const dy = ball.y - rimY;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < BALL_RADIUS + 2) {
+                            hitSpike = true;
+                        }
+                    });
+
+                    if (hitSpike) {
+                        popBall();
+                        return; 
+                    }
+                }
+
                 const distToCenter = Math.abs(ball.x - h.x);
                 const distY = Math.abs(ball.y - h.y);
-                
                 if (distToCenter < 15 && distY < 15) {
                      ball.x += (h.x - ball.x) * 0.05 * dt;
                 }
@@ -389,8 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (h.type === HOOP_TYPE.BACKBOARD) {
                     checkBackboardCollision(h);
                 }
-
-                // [ИЗМЕНЕНИЕ 31] Удалено checkHoopBottomCollision (мяч пролетает сквозь дно)
 
                 checkRimCollision(h);
 
@@ -449,13 +497,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 ball.vx -= (1 + bounceFactor) * vDotN * nx;
                 ball.vy -= (1 + bounceFactor) * vDotN * ny;
                 
-                // [ИЗМЕНЕНИЕ 31] Удалена проверка удара снизу (мяч может пролететь между точками)
-                
                 const overlap = (BALL_RADIUS + 5) - dist;
                 ball.x += nx * overlap;
                 ball.y += ny * overlap;
             }
         });
+    }
+
+    function popBall() {
+        if (!ball.visible) return;
+        ball.visible = false;
+        ball.isMoving = false;
+        createParticles(ball.x, ball.y, 40, '#480d5b'); 
+        setTimeout(triggerDeathSequence, 500); 
     }
 
     function handleScore(targetHoop) {
@@ -531,10 +585,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawObstacle();
 
-        if (isDragging && ball.isSitting) drawTrajectory();
+        if (isDragging && ball.isSitting && ball.visible) drawTrajectory();
 
         hoops.forEach((h, i) => drawHoopBack(h, i));
-        drawBall();
+        
+        if (ball.visible) drawBall();
+        
         hoops.forEach((h, i) => drawHoopFront(h, i));
         drawParticles();
         drawFloatingTexts();
@@ -678,10 +734,35 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.beginPath();
         ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI*2);
         ctx.stroke();
+
+        if (h.type === HOOP_TYPE.SPIKED) {
+            ctx.fillStyle = h.isConquered ? '#2a0835' : '#480d5b'; 
+            
+            const spikeCount = 8;
+            for(let i=0; i<spikeCount; i++) {
+                const angle = (i / spikeCount) * Math.PI * 2;
+                const sx = Math.cos(angle) * HOOP_RADIUS;
+                const sy = Math.sin(angle) * (HOOP_RADIUS * 0.35);
+                
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                const tipX = Math.cos(angle) * (HOOP_RADIUS + 10);
+                const tipY = Math.sin(angle) * ((HOOP_RADIUS * 0.35) + 10);
+                
+                const baseAngle1 = angle - 0.1;
+                const baseAngle2 = angle + 0.1;
+                
+                ctx.lineTo(Math.cos(baseAngle1) * HOOP_RADIUS, Math.sin(baseAngle1) * (HOOP_RADIUS * 0.35));
+                ctx.lineTo(tipX, tipY);
+                ctx.lineTo(Math.cos(baseAngle2) * HOOP_RADIUS, Math.sin(baseAngle2) * (HOOP_RADIUS * 0.35));
+                ctx.fill();
+            }
+        }
+
         ctx.restore();
     }
 
-    function createParticles(x, y, n) {
+    function createParticles(x, y, n, colorOverride = null) {
         for(let i=0; i<n; i++) {
             particles.push({
                 type: 'dot',
@@ -689,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 vx: (Math.random()-0.5)*15, 
                 vy: (Math.random()-0.5)*15, 
                 life: 1, 
-                color: `hsl(${20+Math.random()*30}, 100%, 50%)`
+                color: colorOverride || `hsl(${20+Math.random()*30}, 100%, 50%)`
             });
         }
     }
@@ -816,14 +897,56 @@ document.addEventListener('DOMContentLoaded', () => {
         shotTouchedRim = false;
     }
 
-    function endGame() {
+    function triggerDeathSequence() {
+        if (isGameOver) return;
         isGameOver = true;
-        finalScoreElement.innerText = `Счёт: ${score}`;
+
+        if (!hasUsedRevive) {
+            if(secondChanceScreen) secondChanceScreen.classList.remove('hidden');
+            let timeLeft = 5;
+            if(secondChanceTimerEl) secondChanceTimerEl.innerText = timeLeft;
+
+            reviveTimerInterval = setInterval(() => {
+                timeLeft--;
+                if(secondChanceTimerEl) secondChanceTimerEl.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(reviveTimerInterval);
+                    showFinalGameOver();
+                }
+            }, 1000);
+        } else {
+            showFinalGameOver();
+        }
+    }
+
+    // Функция-заглушка для рекламы
+    function showRewardedAd() {
+        clearInterval(reviveTimerInterval);
+        console.log("Showing Ad...");
+        // Симуляция
+        setTimeout(() => {
+            reviveGame();
+        }, 500);
+    }
+
+    function reviveGame() {
+        isGameOver = false;
+        hasUsedRevive = true;
+        if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
+        resetBallToHoop(currentHoopIndex);
+        ball.visible = true; 
+        swishCombo = 0;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function showFinalGameOver() {
+        if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
+        finalScoreElement.innerText = `Счёт: ${score}`;
     }
 
     function updateScoreUI() {
-        scoreElement.innerText = score;
+        if(scoreElement) scoreElement.innerText = score;
     }
 
     canvas.addEventListener('mousedown', startDrag);
@@ -836,6 +959,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     restartButton.addEventListener('click', initGame);
     topRestartBtn.addEventListener('click', initGame);
+    if(adButton) adButton.addEventListener('click', showRewardedAd);
+
     window.addEventListener('resize', () => { resize(); });
 
     initGame();
