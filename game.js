@@ -23,10 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const restartButton = document.getElementById('restartButton');
     const topRestartBtn = document.getElementById('topRestartBtn');
     
+    // High Score
+    const highScoreElement = document.getElementById('high-score-value'); // [ИЗМЕНЕНИЕ]
+
     // Второй шанс
     const adButton = document.getElementById('adButton');
     const secondChanceTimerEl = document.getElementById('secondChanceTimer');
-    const closeSecondChanceBtn = document.getElementById('closeSecondChance'); // [ИЗМЕНЕНИЕ]
+    const closeSecondChanceBtn = document.getElementById('closeSecondChance');
 
     // --- CONFIG ---
     const GRAVITY = 0.6;
@@ -52,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- STATE ---
     let width, height;
     let score = 0;
+    let highScore = 0; // [ИЗМЕНЕНИЕ] Переменная рекорда
     let isGameOver = false;
     let lastTime = 0;
 
@@ -95,6 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
         isGameOver = false;
         score = 0;
         
+        // [ИЗМЕНЕНИЕ] Загрузка рекорда при старте
+        const savedScore = localStorage.getItem('dunkRiseHighScore');
+        if (savedScore) {
+            highScore = parseInt(savedScore, 10);
+            if (highScoreElement) highScoreElement.innerText = highScore;
+        }
+
         swishCombo = 0;
         shotTouchedRim = false;
         currentObstacle = null;
@@ -147,6 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         do {
             type = HOOP_TYPE.NORMAL;
+            
+            // [БАЛАНС] Шипы: после 20 очков, 30% шанс
             if (score >= 20 && Math.random() < 0.3) {
                 type = HOOP_TYPE.SPIKED;
             } else if (prevHoop.type !== HOOP_TYPE.NORMAL) {
@@ -161,6 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (rand < 0.7) type = HOOP_TYPE.NORMAL;
                     else type = HOOP_TYPE.BACKBOARD;
                 }
+            }
+
+            if (type === HOOP_TYPE.SPIKED) {
+                // Сбрасываем лишние
             }
 
             const minH = height * 0.25; 
@@ -228,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const midX = (startHoop.x + endHoop.x) / 2;
         const midY = (startHoop.y + endHoop.y) / 2;
 
+        // [БАЛАНС] Ветер: после 15 очков, 30% шанс
         if (score >= 15 && Math.random() < 0.30) {
             
             const strengthRoll = Math.random();
@@ -935,13 +953,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if(secondChanceScreen) secondChanceScreen.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
         finalScoreElement.innerText = `Счёт: ${score}`;
+        // [ИЗМЕНЕНИЕ] Сохранение рекорда при окончательном проигрыше
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('dunkRiseHighScore', highScore);
+            if (highScoreElement) highScoreElement.innerText = highScore;
+        }
     }
 
     function updateScoreUI() {
         if(scoreElement) scoreElement.innerText = score;
     }
 
-    // [ИЗМЕНЕНИЕ] Функция закрытия окна "Второй шанс"
     function closeSecondChance() {
         clearInterval(reviveTimerInterval);
         showFinalGameOver();
@@ -958,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
     restartButton.addEventListener('click', initGame);
     topRestartBtn.addEventListener('click', initGame);
     if(adButton) adButton.addEventListener('click', showRewardedAd);
-    if(closeSecondChanceBtn) closeSecondChanceBtn.addEventListener('click', closeSecondChance); // [ИЗМЕНЕНИЕ]
+    if(closeSecondChanceBtn) closeSecondChanceBtn.addEventListener('click', closeSecondChance);
 
     window.addEventListener('resize', () => { resize(); });
 
