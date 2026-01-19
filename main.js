@@ -75,7 +75,6 @@ function showFinalGameOver(finalScore) {
     UI.showGameOverScreen(finalScore, isRecord);
 }
 
-// [ИСПРАВЛЕНИЕ] Правильный вызов функции воскрешения
 function performRevive() {
     clearInterval(reviveTimerInterval);
     console.log("Showing Ad...");
@@ -84,7 +83,6 @@ function performRevive() {
         UI.hideSecondChanceScreen();
         hasUsedRevive = true;
         
-        // Вызываем функцию из game-logic.js
         if (gameState) {
             Game.reviveGameLogic(gameState);
         }
@@ -121,7 +119,8 @@ if (topRestartBtn) topRestartBtn.onclick = performFullRestart;
 if (adButton) adButton.onclick = performRevive;
 if (closeSecondChanceBtn) closeSecondChanceBtn.onclick = performCloseSecondChance;
 
-// Touch / Mouse Inputs
+// --- INPUT HANDLING (CRITICAL FIX) ---
+
 function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -129,13 +128,35 @@ function getPos(e) {
     return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-canvas.addEventListener('mousedown', (e) => { if(gameState) Game.handleStartDrag(getPos(e), gameState); });
-window.addEventListener('mousemove', (e) => { if(gameState) Game.handleMoveDrag(getPos(e), gameState); });
-window.addEventListener('mouseup', () => { if(gameState) Game.handleEndDrag(gameState); });
+// Mouse Events (PC)
+canvas.addEventListener('mousedown', (e) => { 
+    if(gameState) Game.handleStartDrag(getPos(e), gameState); 
+});
+window.addEventListener('mousemove', (e) => { 
+    if(gameState) Game.handleMoveDrag(getPos(e), gameState); 
+});
+window.addEventListener('mouseup', () => { 
+    if(gameState) Game.handleEndDrag(gameState); 
+});
 
-canvas.addEventListener('touchstart', (e) => { if(gameState) Game.handleStartDrag(getPos(e), gameState); }, {passive: false});
-window.addEventListener('touchmove', (e) => { if(gameState) Game.handleMoveDrag(getPos(e), gameState); }, {passive: false});
-window.addEventListener('touchend', () => { if(gameState) Game.handleEndDrag(gameState); });
+// Touch Events (Mobile) - БЛОКИРОВКА СКРОЛЛА
+canvas.addEventListener('touchstart', (e) => { 
+    // [ВАЖНО] Запрещаем браузеру обрабатывать жест (скролл, зум)
+    e.preventDefault(); 
+    if(gameState) Game.handleStartDrag(getPos(e), gameState); 
+}, {passive: false}); // passive: false обязательно для preventDefault
+
+window.addEventListener('touchmove', (e) => { 
+    // [ВАЖНО] Запрещаем скролл даже если палец вышел за пределы канваса
+    e.preventDefault(); 
+    if(gameState) Game.handleMoveDrag(getPos(e), gameState); 
+}, {passive: false});
+
+window.addEventListener('touchend', (e) => { 
+    // [ВАЖНО] Предотвращаем эмуляцию клика мышью
+    e.preventDefault();
+    if(gameState) Game.handleEndDrag(gameState); 
+}, {passive: false});
 
 window.addEventListener('resize', resize);
 
