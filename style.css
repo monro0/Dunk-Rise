@@ -4,7 +4,7 @@
     box-sizing: border-box;
 }
 
-/* [НОВОЕ] Глобальное отключение системных взаимодействий */
+/* Глобальное отключение системных взаимодействий */
 body, canvas {
     /* Запрет выделения текста */
     -webkit-user-select: none; /* Safari, Chrome */
@@ -18,14 +18,21 @@ body, canvas {
     /* Отключение синей подсветки нажатия на Android/iOS */
     -webkit-tap-highlight-color: transparent;
     
-    /* Запрет перетаскивания изображений (на всякий случай) */
+    /* Запрет перетаскивания изображений */
     -webkit-user-drag: none;
 }
 
 html, body {
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    
+    /* --- [ВАЖНО] ОТКЛЮЧЕНИЕ СКРОЛЛА И PULL-TO-REFRESH --- */
+    overflow: hidden; /* Убирает скроллбары */
+    overscroll-behavior-y: contain; /* Запрещает "оттягивание" для обновления */
+    position: fixed; /* Жестко фиксирует body, предотвращая "прыжки" */
+    top: 0;
+    left: 0;
+    
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
     background-color: #1a1a1a; 
     display: flex;
@@ -56,7 +63,7 @@ canvas {
     display: block;
     width: 100%;
     height: 100%;
-    touch-action: none; /* Дополнительная защита от скролла */
+    touch-action: none; /* Критично: сообщает браузеру, что касания обрабатывает игра, а не скролл */
 }
 
 #ui-container {

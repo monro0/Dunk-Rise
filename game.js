@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIG ---
     // [НОВОЕ] Максимальная дистанция оттягивания (лимит силы броска)
-    const MAX_PULL_DISTANCE = 300;
+    const MAX_PULL_DISTANCE = 250;
 
     const GRAVITY = 0.6;
     const DRAG_POWER = 0.16;
