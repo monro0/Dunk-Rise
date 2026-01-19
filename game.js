@@ -32,9 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSecondChanceBtn = document.getElementById('closeSecondChance');
 
     // --- CONFIG ---
+    // [НОВОЕ] Максимальная дистанция оттягивания (лимит силы броска)
+    const MAX_PULL_DISTANCE = 300;
+
     const GRAVITY = 0.6;
     const DRAG_POWER = 0.16;
-    const MAX_DRAG = 220;
+    // MAX_DRAG удален, так как теперь используется MAX_PULL_DISTANCE
     const BALL_RADIUS = 22;
     
     const HOOP_RADIUS = 46; 
@@ -70,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let reviveTimerInterval = null;
 
     let ball = { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true };
-    // Увеличенный буфер следа для более длинного хвоста
     let ballTrail = [];
 
     let hoops = [];
@@ -363,10 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ball.y += ball.vy * dt;
             ball.angle += ball.vx * 0.05 * dt;
             
-            // Обновление следа
             if (ball.visible) {
                 ballTrail.push({x: ball.x, y: ball.y});
-                // Увеличенная длина следа
                 if (ballTrail.length > 30) {
                     ballTrail.shift();
                 }
@@ -603,7 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         drawObstacle();
 
-        // 1. Рисуем след (за мячом)
         if (!ball.isSitting && ball.visible) {
              drawTrail();
         }
@@ -612,7 +611,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hoops.forEach((h, i) => drawHoopBack(h, i));
         
-        // 2. Рисуем сам мяч
         if (ball.visible) drawBall();
         
         hoops.forEach((h, i) => drawHoopFront(h, i));
@@ -622,20 +620,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    // [ОБНОВЛЕНО] Улучшенный огненный след
     function drawTrail() {
         if (ballTrail.length < 2) return;
 
         for (let i = 0; i < ballTrail.length; i++) {
             const pos = ballTrail[i];
             const ratio = i / ballTrail.length; 
-            const size = BALL_RADIUS * ratio * 0.8; // Сужается к хвосту
+            const size = BALL_RADIUS * ratio * 0.8; 
             const alpha = ratio * 0.5; 
 
             ctx.beginPath();
-            // Градиент от красного (в хвосте) к оранжево-желтому (у мяча)
             const r = 255;
-            const g = Math.floor(ratio * 200); // 0 -> 200
+            const g = Math.floor(ratio * 200); 
             const b = 0;
             
             ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -663,14 +659,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
 
+    // [ИЗМЕНЕНИЕ] Обновленная отрисовка траектории с ограничением
     function drawTrajectory() {
-        const dx = dragStart.x - dragCurrent.x;
-        const dy = dragStart.y - dragCurrent.y;
+        let dx = dragStart.x - dragCurrent.x;
+        let dy = dragStart.y - dragCurrent.y;
         
+        // 1. Считаем дистанцию
         let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > MAX_DRAG) {
-            const s = MAX_DRAG / dist;
-            dx *= s; dy *= s; 
+        
+        // 2. Если превышает лимит, ограничиваем (Clamping)
+        if (dist > MAX_PULL_DISTANCE) {
+            const ratio = MAX_PULL_DISTANCE / dist;
+            dx *= ratio;
+            dy *= ratio;
         }
 
         const vx = dx * DRAG_POWER;
@@ -701,48 +702,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // [ОБНОВЛЕНО] Вращающийся баскетбольный мяч с правильными швами
     function drawBall() {
         ctx.save();
         ctx.translate(ball.x, ball.y);
-        ctx.rotate(ball.angle); // ВРАЩЕНИЕ КАНВАСА
+        ctx.rotate(ball.angle); 
 
-        // 1. Оранжевое тело
         const gradient = ctx.createRadialGradient(
             -BALL_RADIUS / 3, -BALL_RADIUS / 3, BALL_RADIUS / 4, 
             0, 0, BALL_RADIUS
         );
         gradient.addColorStop(0, '#FFB74D'); 
-        gradient.addColorStop(1, '#FF9800'); // Сочный оранжевый
+        gradient.addColorStop(1, '#FF9800'); 
 
         ctx.beginPath();
         ctx.arc(0, 0, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // 2. Изогнутые линии (швы)
-        ctx.strokeStyle = '#2e1a0f'; // Темно-коричневый/черный
+        ctx.strokeStyle = '#2e1a0f'; 
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
 
-        // Вертикальная изогнутая линия
         ctx.beginPath();
         ctx.moveTo(0, -BALL_RADIUS);
         ctx.quadraticCurveTo(BALL_RADIUS * 0.4, 0, 0, BALL_RADIUS);
         ctx.stroke();
 
-        // Горизонтальная изогнутая линия
         ctx.beginPath();
         ctx.moveTo(-BALL_RADIUS, 0);
         ctx.quadraticCurveTo(0, BALL_RADIUS * 0.4, BALL_RADIUS, 0);
         ctx.stroke();
 
-        // "Кольцевая" линия (придает характерный вид мяча)
         ctx.beginPath();
         ctx.ellipse(0, 0, BALL_RADIUS * 0.65, BALL_RADIUS, 0, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 3. Контур
         ctx.strokeStyle = '#BF360C';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -954,21 +948,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         isDragging = false;
         
-        const dx = dragStart.x - dragCurrent.x;
-        const dy = dragStart.y - dragCurrent.y;
+        let dx = dragStart.x - dragCurrent.x;
+        let dy = dragStart.y - dragCurrent.y;
         
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist < 30) return;
 
-        let power = dist;
-        if (power > MAX_DRAG) power = MAX_DRAG;
+        // [НОВОЕ] Ограничение силы броска в физике
+        if (dist > MAX_PULL_DISTANCE) {
+            const ratio = MAX_PULL_DISTANCE / dist;
+            dx *= ratio;
+            dy *= ratio;
+        }
 
-        const scale = power / dist;
-        const finalDx = dx * scale;
-        const finalDy = dy * scale;
-
-        ball.vx = finalDx * DRAG_POWER;
-        ball.vy = finalDy * DRAG_POWER;
+        ball.vx = dx * DRAG_POWER;
+        ball.vy = dy * DRAG_POWER;
         ball.isSitting = false;
         
         shotTouchedRim = false;
