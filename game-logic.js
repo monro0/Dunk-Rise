@@ -40,7 +40,6 @@ export function createInitialState(width, height) {
     return state;
 }
 
-// [ИСПРАВЛЕНИЕ] Экспортируемая функция воскрешения
 export function reviveGameLogic(state) {
     state.isGameOver = false;
     resetBallToHoop(state, state.currentHoopIndex);
@@ -283,8 +282,15 @@ function handleScore(targetHoop, state, callbacks) {
     if (targetHoop.isConquered) { recoverBall(state.hoops.indexOf(targetHoop), state); return; }
     targetHoop.isConquered = true;
     
-    let pointsToAdd = (!state.shotTouchedRim) ? Math.min(state.swishCombo + 1, 5) : 1;
-    if (!state.shotTouchedRim) state.swishCombo++; else state.swishCombo = 0;
+    // [ИЗМЕНЕНИЕ] Бесконечное комбо без "потолка"
+    let pointsToAdd = 0;
+    if (!state.shotTouchedRim) {
+        state.swishCombo++;
+        pointsToAdd = state.swishCombo; // +1, +2, +3... без ограничений
+    } else {
+        state.swishCombo = 0;
+        pointsToAdd = 1;
+    }
     
     state.score += pointsToAdd;
     callbacks.onScore(state.score);
@@ -497,14 +503,28 @@ function drawHoopFront(ctx, h, index, currentIdx) {
     ctx.beginPath(); ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI*2); ctx.stroke();
 
     if (h.type === HOOP_TYPE.SPIKED) {
-        ctx.fillStyle = h.isConquered ? '#2a0835' : '#480d5b'; 
-        for(let i=0; i<8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const sx = Math.cos(angle) * HOOP_RADIUS, sy = Math.sin(angle) * (HOOP_RADIUS * 0.35);
-            ctx.beginPath(); ctx.moveTo(sx, sy);
-            ctx.lineTo(Math.cos(angle) * (HOOP_RADIUS + 10), Math.sin(angle) * ((HOOP_RADIUS * 0.35) + 10));
-            ctx.lineTo(Math.cos(angle+0.1) * HOOP_RADIUS, Math.sin(angle+0.1) * (HOOP_RADIUS * 0.35));
-            ctx.lineTo(Math.cos(angle-0.1) * HOOP_RADIUS, Math.sin(angle-0.1) * (HOOP_RADIUS * 0.35));
+        ctx.fillStyle = h.isConquered ? '#444444' : 'red'; 
+        
+        const spikeCount = 8;
+        for(let i=0; i<spikeCount; i++) {
+            const angle = (i / spikeCount) * Math.PI * 2;
+            const sx = Math.cos(angle) * HOOP_RADIUS;
+            const sy = Math.sin(angle) * (HOOP_RADIUS * 0.35);
+            
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            
+            // [ИЗМЕНЕНИЕ] Возврат к аккуратным шипам (+10 вместо +25)
+            const tipX = Math.cos(angle) * (HOOP_RADIUS + 10);
+            const tipY = Math.sin(angle) * ((HOOP_RADIUS * 0.35) + 10);
+            
+            // [ИЗМЕНЕНИЕ] Более тонкое основание (+/- 0.1 вместо +/- 0.15)
+            const baseAngle1 = angle - 0.1;
+            const baseAngle2 = angle + 0.1;
+            
+            ctx.lineTo(Math.cos(baseAngle1) * HOOP_RADIUS, Math.sin(baseAngle1) * (HOOP_RADIUS * 0.35));
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(Math.cos(baseAngle2) * HOOP_RADIUS, Math.sin(baseAngle2) * (HOOP_RADIUS * 0.35));
             ctx.fill();
         }
     }
