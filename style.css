@@ -4,42 +4,25 @@
     box-sizing: border-box;
 }
 
-/* Глобальное отключение системных взаимодействий */
 body, canvas {
-    /* Запрет выделения текста */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-
-    /* Отключение контекстного меню на iOS */
     -webkit-touch-callout: none;
-
-    /* Отключение синей подсветки нажатия */
     -webkit-tap-highlight-color: transparent;
-    
-    /* Запрет перетаскивания изображений */
     -webkit-user-drag: none;
 }
 
 html, body {
     width: 100%;
     height: 100%;
-    
-    /* --- [ВАЖНО] БЛОКИРОВКА ЖЕСТОВ И СКРОЛЛА --- */
-    overflow: hidden; /* Нет скроллбаров */
-    
-    /* Запрещает "резиновый" скролл и pull-to-refresh на ВСЕХ осях */
-    overscroll-behavior: none; 
-    
-    /* Жесткая фиксация */
+    overflow: hidden;
+    overscroll-behavior: none;
     position: fixed;
     top: 0;
     left: 0;
-    
-    /* Указание браузеру не обрабатывать жесты панорамирования и зума */
     touch-action: none; 
-    
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
     background-color: #1a1a1a; 
     display: flex;
@@ -56,8 +39,6 @@ html, body {
     background: linear-gradient(to bottom, #2a2c2c, #353838 50%, #2a2c2c);
     overflow: hidden;
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
-    
-    /* Дополнительная защита для контейнера */
     overscroll-behavior: none;
     touch-action: none;
 }
@@ -74,8 +55,98 @@ canvas {
     display: block;
     width: 100%;
     height: 100%;
-    /* Гарантирует, что касания обрабатываются JS, а не браузером */
     touch-action: none; 
+}
+
+/* --- MAIN MENU STYLES --- */
+#main-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #1e2020, #2a2c2c);
+    z-index: 100; /* Самый высокий приоритет */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.menu-content {
+    text-align: center;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.game-title {
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 0.9;
+    color: #FF9800;
+    text-transform: uppercase;
+    text-shadow: 0 5px 0 #bf360c, 0 10px 20px rgba(0,0,0,0.5);
+    margin-bottom: 40px;
+    letter-spacing: -2px;
+    font-style: italic;
+}
+
+.menu-record {
+    color: #aeaeae;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 60px;
+    background: rgba(255,255,255,0.05);
+    padding: 10px 20px;
+    border-radius: 20px;
+}
+
+.menu-record .trophy-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    stroke: #FFD700;
+}
+
+#playButton {
+    background: linear-gradient(to bottom, #4CAF50, #388E3C);
+    color: white;
+    border: none;
+    padding: 20px 80px;
+    border-radius: 60px;
+    font-size: 1.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 10px 0 #2E7D32, 0 20px 30px rgba(0,0,0,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    touch-action: manipulation;
+    animation: pulse 2s infinite;
+}
+
+#playButton:active {
+    transform: translateY(5px);
+    box-shadow: 0 5px 0 #2E7D32, 0 10px 20px rgba(0,0,0,0.4);
+}
+
+/* --- HUD & GAME BUTTONS --- */
+
+#game-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Пропускаем клики сквозь контейнер */
+    z-index: 20;
+}
+
+/* Элементы внутри HUD должны реагировать на клики */
+#game-hud > * {
+    pointer-events: auto;
 }
 
 #ui-container {
@@ -100,7 +171,7 @@ canvas {
 #high-score-container {
     position: absolute;
     top: 25px;
-    left: 20px;
+    left: 80px; /* Сдвигаем вправо, чтобы не перекрывать кнопку Домой */
     color: white;
     font-size: 24px;
     font-weight: bold;
@@ -118,11 +189,11 @@ canvas {
     margin-right: 8px;
 }
 
-#topRestartBtn {
+/* Общий стиль для круглых кнопок вверху */
+#topRestartBtn, #homeBtn {
     position: absolute;
     top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     border-radius: 50%;
     width: 44px;
@@ -135,20 +206,25 @@ canvas {
     justify-content: center;
     transition: background 0.2s, transform 0.2s;
     backdrop-filter: blur(5px);
-    touch-action: manipulation; /* Разрешаем нажатие, но не жесты */
+    touch-action: manipulation;
 }
 
-#topRestartBtn svg {
+#topRestartBtn { right: 20px; }
+#homeBtn { left: 20px; }
+
+#topRestartBtn svg, #homeBtn svg {
     width: 24px;
     height: 24px;
 }
 
-#topRestartBtn:active {
-    background: rgba(255, 255, 255, 0.4);
-    transform: rotate(45deg);
+#topRestartBtn:active, #homeBtn:active {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0.9);
 }
 
 .hidden { display: none !important; }
+
+/* MODALS */
 
 #gameOverScreen, #secondChanceScreen {
     position: absolute;
@@ -161,10 +237,8 @@ canvas {
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    z-index: 10;
+    z-index: 50; /* Ниже меню, но выше игры */
     animation: fadeIn 0.3s ease-out;
-    
-    /* Блокировка прокрутки и на модальных окнах */
     overscroll-behavior: none;
     touch-action: none;
 }
@@ -197,23 +271,9 @@ canvas {
     transition: color 0.2s;
 }
 
-#closeSecondChance:active {
-    color: white;
-    transform: scale(0.9);
-}
-
-#secondChanceScreen h2 {
-    font-size: 2rem;
-    margin-bottom: 20px;
-    color: #4CAF50; 
-}
-
-#secondChanceTimer {
-    font-size: 4rem;
-    font-weight: bold;
-    margin: 10px 0 30px;
-    color: white;
-}
+#closeSecondChance:active { color: white; transform: scale(0.9); }
+#secondChanceScreen h2 { font-size: 2rem; margin-bottom: 20px; color: #4CAF50; }
+#secondChanceTimer { font-size: 4rem; font-weight: bold; margin: 10px 0 30px; color: white; }
 
 #adButton {
     background: #4CAF50;
@@ -233,29 +293,11 @@ canvas {
     margin: 0 auto;
     touch-action: manipulation;
 }
-
 #adButton:active { transform: scale(0.95); }
 
-.subtext {
-    margin-top: 15px;
-    font-size: 0.9rem;
-    color: #888;
-}
-
-#gameOverScreen h1 { 
-    font-size: 2.5rem; 
-    margin-bottom: 15px; 
-    color: #FF5722; 
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-#finalScore { 
-    font-size: 1.8rem; 
-    margin-bottom: 30px; 
-    color: white; 
-    font-weight: bold;
-}
+.subtext { margin-top: 15px; font-size: 0.9rem; color: #888; }
+#gameOverScreen h1 { font-size: 2.5rem; margin-bottom: 15px; color: #FF5722; text-transform: uppercase; letter-spacing: 1px; }
+#finalScore { font-size: 1.8rem; margin-bottom: 30px; color: white; font-weight: bold; }
 
 #restartButton {
     background: #FF5722; 
@@ -269,15 +311,25 @@ canvas {
     box-shadow: 0 5px 20px rgba(255, 87, 34, 0.4);
     transition: transform 0.1s, background 0.2s;
     touch-action: manipulation;
+    margin-bottom: 15px;
+    width: 100%;
 }
+#restartButton:hover { background: #F4511E; }
+#restartButton:active { transform: scale(0.95); }
 
-#restartButton:hover {
-    background: #F4511E;
+.secondary-btn {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.2);
+    color: #ccc;
+    padding: 10px 30px;
+    border-radius: 50px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 5px;
 }
-
-#restartButton:active { 
-    transform: scale(0.95); 
-}
+.secondary-btn:active { background: rgba(255,255,255,0.05); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }

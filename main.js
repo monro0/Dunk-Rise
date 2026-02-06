@@ -18,10 +18,13 @@ const container = document.getElementById('game-container');
 const ctx = canvas.getContext('2d');
 
 // Кнопки
+const playButton = document.getElementById('playButton');
+const homeBtn = document.getElementById('homeBtn');
 const restartButton = document.getElementById('restartButton');
 const topRestartBtn = document.getElementById('topRestartBtn');
 const adButton = document.getElementById('adButton');
 const closeSecondChanceBtn = document.getElementById('closeSecondChance');
+const menuButtonOver = document.getElementById('menuButtonOver');
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -42,7 +45,27 @@ function resize() {
     }
 }
 
-// --- LOGIC: Game Over Flow ---
+// --- LOGIC: Game Flow Management ---
+
+function startGame() {
+    UI.hideMainMenu();
+    performFullRestart();
+}
+
+function goToMenu() {
+    // Останавливаем текущую игру
+    gameState = null;
+    UI.hideGameOverScreen();
+    UI.hideSecondChanceScreen();
+    clearInterval(reviveTimerInterval);
+    hasUsedRevive = false;
+    
+    // Показываем меню
+    UI.showMainMenu();
+    
+    // Очищаем канвас (опционально, можно оставить застывший кадр для фона)
+    // ctx.clearRect(0, 0, canvas.width, canvas.height); 
+}
 
 function onDeath(finalScore) {
     if (!hasUsedRevive) {
@@ -113,7 +136,6 @@ const logicCallbacks = {
     },
     onDeath: onDeath,
     onHaptic: (style) => {
-        // Проверяем, доступны ли объекты Telegram WebApp, чтобы код не падал в обычном браузере
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
             window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
         }
@@ -131,10 +153,13 @@ function addInteractionListener(element, callback) {
     }, { passive: false });
 }
 
+addInteractionListener(playButton, startGame);
+addInteractionListener(homeBtn, goToMenu);
 addInteractionListener(restartButton, performFullRestart);
 addInteractionListener(topRestartBtn, performFullRestart);
 addInteractionListener(adButton, performRevive);
 addInteractionListener(closeSecondChanceBtn, performCloseSecondChance);
+addInteractionListener(menuButtonOver, goToMenu); // Кнопка "Меню" на экране проигрыша
 
 
 // --- GAME INPUT HANDLING (Canvas) ---
@@ -183,6 +208,8 @@ function loop(timestamp) {
         GameUpdate.updateGame(dt, gameState, logicCallbacks);
     }
     
+    // Рисуем только если игра активна. 
+    // Если gameState == null (мы в меню), можно рисовать фон или ничего.
     if (gameState) {
         GameDraw.drawGame(ctx, gameState);
     }
@@ -196,10 +223,11 @@ function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     
-    gameState = GameState.createInitialState(container.clientWidth, container.clientHeight);
-    UI.updateScoreUI(gameState.score);
-    
     resize();
+    
+    // Вместо создания игры сразу, показываем меню
+    UI.showMainMenu();
+    
     lastTime = performance.now();
     requestAnimationFrame(loop);
 }

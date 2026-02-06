@@ -7,11 +7,29 @@ const finalScoreElement = document.getElementById('finalScore');
 const secondChanceScreen = document.getElementById('secondChanceScreen');
 const secondChanceTimerEl = document.getElementById('secondChanceTimer');
 
+// Menu Elements
+const mainMenu = document.getElementById('main-menu');
+const menuHighScore = document.getElementById('menu-high-score');
+const gameHud = document.getElementById('game-hud');
+
 export function initUI() {
-    const savedScore = localStorage.getItem('dunkRiseHighScore');
-    if (savedScore && highScoreElement) {
-        highScoreElement.innerText = savedScore;
-    }
+    const savedScore = localStorage.getItem('dunkRiseHighScore') || '0';
+    if (highScoreElement) highScoreElement.innerText = savedScore;
+    if (menuHighScore) menuHighScore.innerText = savedScore;
+}
+
+export function showMainMenu() {
+    if (mainMenu) mainMenu.classList.remove('hidden');
+    if (gameHud) gameHud.classList.add('hidden');
+    
+    // Обновляем рекорд при входе в меню
+    const savedScore = localStorage.getItem('dunkRiseHighScore') || '0';
+    if (menuHighScore) menuHighScore.innerText = savedScore;
+}
+
+export function hideMainMenu() {
+    if (mainMenu) mainMenu.classList.add('hidden');
+    if (gameHud) gameHud.classList.remove('hidden');
 }
 
 export function updateScoreUI(score) {
@@ -20,6 +38,7 @@ export function updateScoreUI(score) {
 
 export function updateHighScoreUI(score) {
     if (highScoreElement) highScoreElement.innerText = score;
+    if (menuHighScore) menuHighScore.innerText = score;
 }
 
 export function showSecondChanceScreen(timeLeft) {

@@ -10,32 +10,65 @@
 <body>
     
     <div id="game-container">
-        <!-- Контейнер рекорда -->
-        <div id="high-score-container">
-            <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-                <path d="M4 22h16"/>
-                <path d="M10 14.66V22"/>
-                <path d="M14 14.66V22"/>
-                <path d="M17.73 4H6.27a2 2 0 0 0-2 2.54v3.31a2 2 0 0 0 2 2.54h11.46a2 2 0 0 0 2-2.54V6.54a2 2 0 0 0-2-2.54z"/>
-            </svg>
-            <span id="high-score-value">0</span>
+        
+        <!-- ГЛАВНОЕ МЕНЮ -->
+        <div id="main-menu">
+            <div class="menu-content">
+                <h1 class="game-title">DUNK<br>RISE</h1>
+                
+                <div class="menu-record">
+                    <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V22"/>
+                        <path d="M14 14.66V22"/>
+                        <path d="M17.73 4H6.27a2 2 0 0 0-2 2.54v3.31a2 2 0 0 0 2 2.54h11.46a2 2 0 0 0 2-2.54V6.54a2 2 0 0 0-2-2.54z"/>
+                    </svg>
+                    <span>BEST: <span id="menu-high-score">0</span></span>
+                </div>
+
+                <button id="playButton">ИГРАТЬ</button>
+            </div>
         </div>
 
-        <button id="topRestartBtn" aria-label="Restart">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6"></path>
-                <path d="M1 20v-6h6"></path>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-        </button>
+        <!-- HUD ИГРЫ (Кнопки и счетчики) -->
+        <div id="game-hud" class="hidden">
+            <!-- Кнопка Домой -->
+            <button id="homeBtn" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </button>
+
+            <!-- Контейнер рекорда (сдвинут вправо стилями) -->
+            <div id="high-score-container">
+                <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                    <path d="M4 22h16"/>
+                    <path d="M10 14.66V22"/>
+                    <path d="M14 14.66V22"/>
+                    <path d="M17.73 4H6.27a2 2 0 0 0-2 2.54v3.31a2 2 0 0 0 2 2.54h11.46a2 2 0 0 0 2-2.54V6.54a2 2 0 0 0-2-2.54z"/>
+                </svg>
+                <span id="high-score-value">0</span>
+            </div>
+
+            <button id="topRestartBtn" aria-label="Restart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"></path>
+                    <path d="M1 20v-6h6"></path>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+
+            <div id="ui-container">
+                <div id="score">0</div>
+            </div>
+        </div>
 
         <canvas id="gameCanvas"></canvas>
-
-        <div id="ui-container">
-            <div id="score">0</div>
-        </div>
 
         <!-- Экран "Второй шанс" -->
         <div id="secondChanceScreen" class="hidden">
@@ -56,6 +89,7 @@
                 <h1>ПРОИГРЫШ</h1>
                 <div id="finalScore"></div>
                 <button id="restartButton">Играть снова</button>
+                <button id="menuButtonOver" class="secondary-btn">Меню</button>
             </div>
         </div>
     </div>
