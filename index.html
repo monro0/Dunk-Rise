@@ -28,13 +28,29 @@
                     <span>BEST: <span id="menu-high-score">0</span></span>
                 </div>
 
-                <button id="playButton">ИГРАТЬ</button>
+                <!-- Кнопки друг под другом (стиль btn-primary дает margin-bottom) -->
+                <button id="playButton" class="btn-primary">ИГРАТЬ</button>
+                <button id="settingsButton" class="btn-primary">НАСТРОЙКИ</button>
             </div>
         </div>
 
-        <!-- HUD ИГРЫ (Кнопки и счетчики) -->
+        <!-- ЭКРАН НАСТРОЕК -->
+        <div id="settings-screen" class="hidden">
+            <h2>НАСТРОЙКИ</h2>
+            
+            <div class="setting-row">
+                <span>Вибрация</span>
+                <label class="switch">
+                    <input type="checkbox" id="vibrationToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <button id="settingsBackBtn" class="btn-secondary">Назад</button>
+        </div>
+
+        <!-- HUD ИГРЫ -->
         <div id="game-hud" class="hidden">
-            <!-- Кнопка Домой -->
             <button id="homeBtn" aria-label="Home">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -42,7 +58,6 @@
                 </svg>
             </button>
 
-            <!-- Контейнер рекорда (сдвинут вправо стилями) -->
             <div id="high-score-container">
                 <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
@@ -70,31 +85,28 @@
 
         <canvas id="gameCanvas"></canvas>
 
-        <!-- Экран "Второй шанс" -->
         <div id="secondChanceScreen" class="hidden">
             <div class="modal">
                 <button id="closeSecondChance">&times;</button>
                 <h2>Продолжить?</h2>
                 <div id="secondChanceTimer">5</div>
-                <button id="adButton">
-                    <span>📺</span> Второй шанс
-                </button>
+                <button id="adButton"><span>📺</span> Второй шанс</button>
                 <p class="subtext">Один раз за игру</p>
             </div>
         </div>
 
-        <!-- Экран "Проигрыш" -->
+        <!-- ЭКРАН ПРОИГРЫША -->
         <div id="gameOverScreen" class="hidden">
             <div class="modal">
                 <h1>ПРОИГРЫШ</h1>
                 <div id="finalScore"></div>
-                <button id="restartButton">Играть снова</button>
-                <button id="menuButtonOver" class="secondary-btn">Меню</button>
+                <!-- Кнопки используют общий класс btn-primary -->
+                <button id="restartButton" class="btn-primary">Играть снова</button>
+                <button id="goHomeButton" class="btn-primary">В Меню</button>
             </div>
         </div>
     </div>
 
-    <!-- [ВАЖНО] Подключение модуля -->
     <script type="module" src="main.js"></script>
 </body>
 </html>

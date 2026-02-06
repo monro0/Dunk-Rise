@@ -4,6 +4,7 @@ import * as GameState from './game-state.js';
 import * as GameUpdate from './game-update.js';
 import * as GameDraw from './game-draw.js';
 import * as GameInput from './game-input.js';
+import { GameSettings } from './config.js';
 
 let lastTime = 0;
 let hasUsedRevive = false;
@@ -17,14 +18,24 @@ const canvas = document.getElementById('gameCanvas');
 const container = document.getElementById('game-container');
 const ctx = canvas.getContext('2d');
 
-// Кнопки
+// Меню
 const playButton = document.getElementById('playButton');
+const settingsButton = document.getElementById('settingsButton');
+
+// HUD
 const homeBtn = document.getElementById('homeBtn');
-const restartButton = document.getElementById('restartButton');
 const topRestartBtn = document.getElementById('topRestartBtn');
+
+// Настройки
+const settingsBackBtn = document.getElementById('settingsBackBtn');
+const vibrationToggle = document.getElementById('vibrationToggle');
+
+// Модалки
+const restartButton = document.getElementById('restartButton');
+const goHomeButton = document.getElementById('goHomeButton');
 const adButton = document.getElementById('adButton');
 const closeSecondChanceBtn = document.getElementById('closeSecondChance');
-const menuButtonOver = document.getElementById('menuButtonOver');
+
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -45,7 +56,7 @@ function resize() {
     }
 }
 
-// --- LOGIC: Game Flow Management ---
+// --- LOGIC: Game Flow ---
 
 function startGame() {
     UI.hideMainMenu();
@@ -53,19 +64,36 @@ function startGame() {
 }
 
 function goToMenu() {
-    // Останавливаем текущую игру
+    // Остановка игры
     gameState = null;
     UI.hideGameOverScreen();
     UI.hideSecondChanceScreen();
     clearInterval(reviveTimerInterval);
     hasUsedRevive = false;
     
-    // Показываем меню
+    // Показать меню
     UI.showMainMenu();
-    
-    // Очищаем канвас (опционально, можно оставить застывший кадр для фона)
-    // ctx.clearRect(0, 0, canvas.width, canvas.height); 
 }
+
+// --- LOGIC: Settings ---
+
+function loadSettings() {
+    const savedVib = localStorage.getItem('dunkRise_vibration');
+    if (savedVib !== null) {
+        GameSettings.vibration = (savedVib === 'true');
+    } else {
+        GameSettings.vibration = true; 
+    }
+    UI.syncSettingsUI(GameSettings);
+}
+
+function toggleVibration(e) {
+    const isChecked = e.target.checked;
+    GameSettings.vibration = isChecked;
+    localStorage.setItem('dunkRise_vibration', isChecked);
+}
+
+// --- LOGIC: Game Over Flow ---
 
 function onDeath(finalScore) {
     if (!hasUsedRevive) {
@@ -103,8 +131,6 @@ function showFinalGameOver(finalScore) {
 
 function performRevive() {
     clearInterval(reviveTimerInterval);
-    console.log("Showing Ad...");
-    
     setTimeout(() => {
         UI.hideSecondChanceScreen();
         hasUsedRevive = true;
@@ -124,7 +150,7 @@ function performFullRestart() {
     UI.updateScoreUI(0);
 }
 
-// --- CALLBACKS FOR LOGIC ---
+// --- CALLBACKS ---
 const logicCallbacks = {
     onScore: (newScore) => {
         UI.updateScoreUI(newScore);
@@ -136,34 +162,50 @@ const logicCallbacks = {
     },
     onDeath: onDeath,
     onHaptic: (style) => {
+        if (!GameSettings.vibration) return;
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
             window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
         }
     }
 };
 
-// --- UNIVERSAL EVENT LISTENER ---
-function addInteractionListener(element, callback) {
+// --- EVENTS ---
+function addInteractionListener(element, callback, eventName = 'click') {
     if (!element) return;
-    element.addEventListener('click', callback);
-    element.addEventListener('touchend', (e) => {
-        e.preventDefault(); 
-        e.stopPropagation(); 
-        callback();
-    }, { passive: false });
+    if (eventName === 'change') {
+        element.addEventListener('change', callback);
+    } else {
+        element.addEventListener('click', callback);
+        element.addEventListener('touchend', (e) => {
+            if (element.tagName !== 'INPUT') {
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                callback();
+            }
+        }, { passive: false });
+    }
 }
 
+// Main Menu
 addInteractionListener(playButton, startGame);
+addInteractionListener(settingsButton, UI.showSettings);
+
+// Settings
+addInteractionListener(settingsBackBtn, UI.hideSettings);
+addInteractionListener(vibrationToggle, toggleVibration, 'change');
+
+// Game HUD
 addInteractionListener(homeBtn, goToMenu);
-addInteractionListener(restartButton, performFullRestart);
 addInteractionListener(topRestartBtn, performFullRestart);
+
+// Game Over & Modals
+addInteractionListener(restartButton, performFullRestart);
+addInteractionListener(goHomeButton, goToMenu);
 addInteractionListener(adButton, performRevive);
 addInteractionListener(closeSecondChanceBtn, performCloseSecondChance);
-addInteractionListener(menuButtonOver, goToMenu); // Кнопка "Меню" на экране проигрыша
 
 
-// --- GAME INPUT HANDLING (Canvas) ---
-
+// --- INPUT HANDLING ---
 function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -171,63 +213,29 @@ function getPos(e) {
     return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-canvas.addEventListener('mousedown', (e) => { 
-    if(gameState) GameInput.handleStartDrag(getPos(e), gameState); 
-});
-window.addEventListener('mousemove', (e) => { 
-    if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); 
-});
-window.addEventListener('mouseup', () => { 
-    if(gameState) GameInput.handleEndDrag(gameState); 
-});
-
-canvas.addEventListener('touchstart', (e) => { 
-    e.preventDefault(); 
-    if(gameState) GameInput.handleStartDrag(getPos(e), gameState); 
-}, {passive: false});
-
-window.addEventListener('touchmove', (e) => { 
-    e.preventDefault(); 
-    if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); 
-}, {passive: false});
-
-window.addEventListener('touchend', (e) => { 
-    e.preventDefault();
-    if(gameState) GameInput.handleEndDrag(gameState); 
-}, {passive: false});
-
+canvas.addEventListener('mousedown', (e) => { if(gameState) GameInput.handleStartDrag(getPos(e), gameState); });
+window.addEventListener('mousemove', (e) => { if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
+window.addEventListener('mouseup', () => { if(gameState) GameInput.handleEndDrag(gameState); });
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState) GameInput.handleStartDrag(getPos(e), gameState); }, {passive: false});
+window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); }, {passive: false});
+window.addEventListener('touchend', (e) => { e.preventDefault(); if(gameState) GameInput.handleEndDrag(gameState); }, {passive: false});
 window.addEventListener('resize', resize);
 
-// --- MAIN LOOP ---
-
+// --- INIT ---
 function loop(timestamp) {
     const dt = (timestamp - lastTime) / 16.67;
     lastTime = timestamp;
-
-    if (gameState && !gameState.isGameOver) {
-        GameUpdate.updateGame(dt, gameState, logicCallbacks);
-    }
-    
-    // Рисуем только если игра активна. 
-    // Если gameState == null (мы в меню), можно рисовать фон или ничего.
-    if (gameState) {
-        GameDraw.drawGame(ctx, gameState);
-    }
-    
+    if (gameState && !gameState.isGameOver) GameUpdate.updateGame(dt, gameState, logicCallbacks);
+    if (gameState) GameDraw.drawGame(ctx, gameState);
     requestAnimationFrame(loop);
 }
-
-// --- INITIALIZATION ---
 
 function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
-    
+    loadSettings();
     resize();
-    
-    // Вместо создания игры сразу, показываем меню
     UI.showMainMenu();
-    
     lastTime = performance.now();
     requestAnimationFrame(loop);
 }

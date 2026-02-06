@@ -1,5 +1,10 @@
 // --- CONFIGURATION & CONSTANTS ---
 
+// Глобальные настройки игры
+export const GameSettings = {
+    vibration: true // По умолчанию включено
+};
+
 // Физика
 export const GRAVITY = 0.6;
 export const DRAG_POWER = 0.16;

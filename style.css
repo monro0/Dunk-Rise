@@ -58,7 +58,57 @@ canvas {
     touch-action: none; 
 }
 
-/* --- MAIN MENU STYLES --- */
+/* --- UI COMPONENTS: BUTTONS --- */
+
+/* Единый стиль для всех основных кнопок (Оранжевый) */
+.btn-primary {
+    background: #FF5722; 
+    color: white;
+    border: none;
+    padding: 18px 0; /* Фиксированная высота */
+    width: 240px;    /* Фиксированная ширина для единообразия */
+    border-radius: 50px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(255, 87, 34, 0.4);
+    transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+    touch-action: manipulation;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px; /* Отступ снизу для стека кнопок */
+    display: block; /* Чтобы margin работал корректно */
+}
+
+.btn-primary:hover {
+    background: #F4511E;
+}
+
+.btn-primary:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4);
+}
+
+/* Кнопка "Назад" в настройках (можно сделать чуть скромнее или такой же) */
+.btn-secondary {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+}
+.btn-secondary:active {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.96);
+}
+
+
+/* --- MAIN MENU --- */
+
 #main-menu {
     position: absolute;
     top: 0;
@@ -66,7 +116,7 @@ canvas {
     width: 100%;
     height: 100%;
     background: linear-gradient(to bottom, #1e2020, #2a2c2c);
-    z-index: 100; /* Самый высокий приоритет */
+    z-index: 100;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -76,6 +126,10 @@ canvas {
 
 .menu-content {
     text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -84,7 +138,6 @@ canvas {
     font-weight: 900;
     line-height: 0.9;
     color: #FF9800;
-    text-transform: uppercase;
     text-shadow: 0 5px 0 #bf360c, 0 10px 20px rgba(0,0,0,0.5);
     margin-bottom: 40px;
     letter-spacing: -2px;
@@ -97,7 +150,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
     background: rgba(255,255,255,0.05);
     padding: 10px 20px;
     border-radius: 20px;
@@ -110,29 +163,78 @@ canvas {
     stroke: #FFD700;
 }
 
-#playButton {
-    background: linear-gradient(to bottom, #4CAF50, #388E3C);
-    color: white;
-    border: none;
-    padding: 20px 80px;
-    border-radius: 60px;
-    font-size: 1.8rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 10px 0 #2E7D32, 0 20px 30px rgba(0,0,0,0.4);
-    transition: transform 0.1s, box-shadow 0.1s;
+/* --- SETTINGS SCREEN --- */
+
+#settings-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #2a2c2c; /* Полный экран, не модалка */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 150;
+    animation: fadeIn 0.3s ease-out;
+}
+
+#settings-screen h2 {
+    color: #FF9800;
+    font-size: 2.5rem;
+    margin-bottom: 40px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    touch-action: manipulation;
-    animation: pulse 2s infinite;
 }
 
-#playButton:active {
-    transform: translateY(5px);
-    box-shadow: 0 5px 0 #2E7D32, 0 10px 20px rgba(0,0,0,0.4);
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 260px;
+    margin-bottom: 50px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
 }
 
-/* --- HUD & GAME BUTTONS --- */
+/* Toggle Switch CSS */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider { background-color: #4CAF50; }
+input:focus + .slider { box-shadow: 0 0 1px #4CAF50; }
+input:checked + .slider:before { transform: translateX(26px); }
+
+
+/* --- HUD --- */
 
 #game-hud {
     position: absolute;
@@ -140,20 +242,15 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Пропускаем клики сквозь контейнер */
+    pointer-events: none;
     z-index: 20;
 }
 
-/* Элементы внутри HUD должны реагировать на клики */
-#game-hud > * {
-    pointer-events: auto;
-}
+#game-hud > * { pointer-events: auto; }
 
 #ui-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    top: 0; left: 0; width: 100%;
     padding: 60px 20px;
     text-align: center;
     pointer-events: none;
@@ -170,8 +267,7 @@ canvas {
 
 #high-score-container {
     position: absolute;
-    top: 25px;
-    left: 80px; /* Сдвигаем вправо, чтобы не перекрывать кнопку Домой */
+    top: 25px; left: 80px;
     color: white;
     font-size: 24px;
     font-weight: bold;
@@ -182,28 +278,16 @@ canvas {
     opacity: 0.8;
 }
 
-.trophy-icon {
-    width: 28px;
-    height: 28px;
-    stroke: #aeaeae;
-    margin-right: 8px;
-}
+.trophy-icon { width: 28px; height: 28px; stroke: #aeaeae; margin-right: 8px; }
 
-/* Общий стиль для круглых кнопок вверху */
 #topRestartBtn, #homeBtn {
-    position: absolute;
-    top: 20px;
+    position: absolute; top: 20px;
     background: rgba(255, 255, 255, 0.15);
-    border: none;
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    color: white;
-    cursor: pointer;
+    border: none; border-radius: 50%;
+    width: 44px; height: 44px;
+    color: white; cursor: pointer;
     z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     transition: background 0.2s, transform 0.2s;
     backdrop-filter: blur(5px);
     touch-action: manipulation;
@@ -211,125 +295,68 @@ canvas {
 
 #topRestartBtn { right: 20px; }
 #homeBtn { left: 20px; }
-
-#topRestartBtn svg, #homeBtn svg {
-    width: 24px;
-    height: 24px;
-}
-
-#topRestartBtn:active, #homeBtn:active {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(0.9);
-}
+#topRestartBtn svg, #homeBtn svg { width: 24px; height: 24px; }
+#topRestartBtn:active, #homeBtn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.9); }
 
 .hidden { display: none !important; }
 
-/* MODALS */
+/* --- GAME OVER & SECOND CHANCE --- */
 
 #gameOverScreen, #secondChanceScreen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     flex-direction: column;
-    z-index: 50; /* Ниже меню, но выше игры */
+    z-index: 50;
     animation: fadeIn 0.3s ease-out;
-    overscroll-behavior: none;
-    touch-action: none;
+    overscroll-behavior: none; touch-action: none;
 }
 
 .modal {
     position: relative;
     background: #353838;
     color: white;
-    padding: 40px 50px;
+    padding: 40px 30px;
     border-radius: 25px;
     text-align: center;
     box-shadow: 0 10px 50px rgba(0,0,0,0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
     animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 #closeSecondChance {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: transparent;
-    border: none;
-    color: #9E9E9E;
-    font-size: 2.5rem;
-    font-weight: 300;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.2s;
+    position: absolute; top: 10px; right: 15px;
+    background: transparent; border: none;
+    color: #9E9E9E; font-size: 2.5rem; font-weight: 300;
+    line-height: 1; cursor: pointer; padding: 0;
 }
-
 #closeSecondChance:active { color: white; transform: scale(0.9); }
+
 #secondChanceScreen h2 { font-size: 2rem; margin-bottom: 20px; color: #4CAF50; }
 #secondChanceTimer { font-size: 4rem; font-weight: bold; margin: 10px 0 30px; color: white; }
-
 #adButton {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    border-radius: 50px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
+    background: #4CAF50; color: white; border: none;
+    padding: 15px 30px; border-radius: 50px;
+    font-size: 1.2rem; font-weight: bold; cursor: pointer;
     box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-    transition: transform 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin: 0 auto;
-    touch-action: manipulation;
+    transition: transform 0.1s; display: flex; align-items: center;
+    justify-content: center; gap: 10px; margin: 0 auto; touch-action: manipulation;
 }
 #adButton:active { transform: scale(0.95); }
-
 .subtext { margin-top: 15px; font-size: 0.9rem; color: #888; }
-#gameOverScreen h1 { font-size: 2.5rem; margin-bottom: 15px; color: #FF5722; text-transform: uppercase; letter-spacing: 1px; }
+
+#gameOverScreen h1 { 
+    font-size: 2.5rem; margin-bottom: 15px; color: #FF5722; 
+    text-transform: uppercase; letter-spacing: 1px;
+}
 #finalScore { font-size: 1.8rem; margin-bottom: 30px; color: white; font-weight: bold; }
 
-#restartButton {
-    background: #FF5722; 
-    color: white;
-    border: none;
-    padding: 15px 50px;
-    border-radius: 50px;
-    font-size: 1.3rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 5px 20px rgba(255, 87, 34, 0.4);
-    transition: transform 0.1s, background 0.2s;
-    touch-action: manipulation;
-    margin-bottom: 15px;
-    width: 100%;
-}
-#restartButton:hover { background: #F4511E; }
-#restartButton:active { transform: scale(0.95); }
 
-.secondary-btn {
-    background: transparent;
-    border: 2px solid rgba(255,255,255,0.2);
-    color: #ccc;
-    padding: 10px 30px;
-    border-radius: 50px;
-    font-size: 1rem;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 5px;
-}
-.secondary-btn:active { background: rgba(255,255,255,0.05); }
-
+/* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }

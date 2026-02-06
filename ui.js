@@ -12,6 +12,10 @@ const mainMenu = document.getElementById('main-menu');
 const menuHighScore = document.getElementById('menu-high-score');
 const gameHud = document.getElementById('game-hud');
 
+// Settings Elements
+const settingsScreen = document.getElementById('settings-screen');
+const vibrationToggle = document.getElementById('vibrationToggle');
+
 export function initUI() {
     const savedScore = localStorage.getItem('dunkRiseHighScore') || '0';
     if (highScoreElement) highScoreElement.innerText = savedScore;
@@ -22,7 +26,6 @@ export function showMainMenu() {
     if (mainMenu) mainMenu.classList.remove('hidden');
     if (gameHud) gameHud.classList.add('hidden');
     
-    // Обновляем рекорд при входе в меню
     const savedScore = localStorage.getItem('dunkRiseHighScore') || '0';
     if (menuHighScore) menuHighScore.innerText = savedScore;
 }
@@ -31,6 +34,24 @@ export function hideMainMenu() {
     if (mainMenu) mainMenu.classList.add('hidden');
     if (gameHud) gameHud.classList.remove('hidden');
 }
+
+// --- SETTINGS UI ---
+
+export function showSettings() {
+    if (settingsScreen) settingsScreen.classList.remove('hidden');
+}
+
+export function hideSettings() {
+    if (settingsScreen) settingsScreen.classList.add('hidden');
+}
+
+export function syncSettingsUI(settings) {
+    if (vibrationToggle) {
+        vibrationToggle.checked = settings.vibration;
+    }
+}
+
+// -------------------
 
 export function updateScoreUI(score) {
     if (scoreElement) scoreElement.innerText = score;
