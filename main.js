@@ -1,6 +1,9 @@
 import * as Config from './config.js';
 import * as UI from './ui.js';
-import * as Game from './game-logic.js';
+import * as GameState from './game-state.js';
+import * as GameUpdate from './game-update.js';
+import * as GameDraw from './game-draw.js';
+import * as GameInput from './game-input.js';
 
 let lastTime = 0;
 let hasUsedRevive = false;
@@ -83,7 +86,7 @@ function performRevive() {
         UI.hideSecondChanceScreen();
         hasUsedRevive = true;
         if (gameState) {
-            Game.reviveGameLogic(gameState);
+            GameState.reviveGameLogic(gameState);
         }
     }, 500);
 }
@@ -94,7 +97,7 @@ function performFullRestart() {
     hasUsedRevive = false;
     clearInterval(reviveTimerInterval);
     
-    gameState = Game.createInitialState(container.clientWidth, container.clientHeight);
+    gameState = GameState.createInitialState(container.clientWidth, container.clientHeight);
     UI.updateScoreUI(0);
 }
 
@@ -108,30 +111,26 @@ const logicCallbacks = {
             UI.updateHighScoreUI(newScore);
         }
     },
-    onDeath: onDeath 
+    onDeath: onDeath,
+    onHaptic: (style) => {
+        // Проверяем, доступны ли объекты Telegram WebApp, чтобы код не падал в обычном браузере
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
+        }
+    }
 };
 
-// --- [НОВОЕ] UNIVERSAL EVENT LISTENER ---
-// Функция, которая обрабатывает и click, и touchend для надежности
+// --- UNIVERSAL EVENT LISTENER ---
 function addInteractionListener(element, callback) {
     if (!element) return;
-
-    // 1. Mouse Click (PC)
-    element.addEventListener('click', (e) => {
-        callback();
-    });
-
-    // 2. Touch End (Mobile)
+    element.addEventListener('click', callback);
     element.addEventListener('touchend', (e) => {
-        // Предотвращаем "призрачный" клик, который браузер может послать следом
         e.preventDefault(); 
-        // Останавливаем всплытие, чтобы не задеть canvas под кнопкой
         e.stopPropagation(); 
         callback();
     }, { passive: false });
 }
 
-// Привязка кнопок через универсальную функцию
 addInteractionListener(restartButton, performFullRestart);
 addInteractionListener(topRestartBtn, performFullRestart);
 addInteractionListener(adButton, performRevive);
@@ -147,31 +146,29 @@ function getPos(e) {
     return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-// Mouse Events (PC)
 canvas.addEventListener('mousedown', (e) => { 
-    if(gameState) Game.handleStartDrag(getPos(e), gameState); 
+    if(gameState) GameInput.handleStartDrag(getPos(e), gameState); 
 });
 window.addEventListener('mousemove', (e) => { 
-    if(gameState) Game.handleMoveDrag(getPos(e), gameState); 
+    if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); 
 });
 window.addEventListener('mouseup', () => { 
-    if(gameState) Game.handleEndDrag(gameState); 
+    if(gameState) GameInput.handleEndDrag(gameState); 
 });
 
-// Touch Events (Mobile) - Block Scroll
 canvas.addEventListener('touchstart', (e) => { 
     e.preventDefault(); 
-    if(gameState) Game.handleStartDrag(getPos(e), gameState); 
+    if(gameState) GameInput.handleStartDrag(getPos(e), gameState); 
 }, {passive: false});
 
 window.addEventListener('touchmove', (e) => { 
     e.preventDefault(); 
-    if(gameState) Game.handleMoveDrag(getPos(e), gameState); 
+    if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); 
 }, {passive: false});
 
 window.addEventListener('touchend', (e) => { 
     e.preventDefault();
-    if(gameState) Game.handleEndDrag(gameState); 
+    if(gameState) GameInput.handleEndDrag(gameState); 
 }, {passive: false});
 
 window.addEventListener('resize', resize);
@@ -183,11 +180,11 @@ function loop(timestamp) {
     lastTime = timestamp;
 
     if (gameState && !gameState.isGameOver) {
-        Game.updatePhysics(dt, gameState, logicCallbacks);
+        GameUpdate.updateGame(dt, gameState, logicCallbacks);
     }
     
     if (gameState) {
-        Game.drawGame(ctx, gameState);
+        GameDraw.drawGame(ctx, gameState);
     }
     
     requestAnimationFrame(loop);
@@ -199,7 +196,7 @@ function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     
-    gameState = Game.createInitialState(container.clientWidth, container.clientHeight);
+    gameState = GameState.createInitialState(container.clientWidth, container.clientHeight);
     UI.updateScoreUI(gameState.score);
     
     resize();
