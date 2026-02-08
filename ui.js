@@ -1,5 +1,5 @@
 import { SKINS } from './config.js';
-import { drawSkin } from './game-draw.js'; // Импорт рендерера
+import { drawSkin } from './game-draw.js';
 
 // --- UI MANAGER (Pure View) ---
 
@@ -78,48 +78,37 @@ export function renderShop(activeSkin, onSelectCallback) {
     shopContainer.innerHTML = ''; // Clear previous
 
     SKINS.forEach(skin => {
+        // Создаем карточку
         const card = document.createElement('div');
-        card.className = `shop-card ${skin.id === activeSkin ? 'active' : ''}`;
+        const isActive = skin.id === activeSkin;
+        card.className = `shop-card ${isActive ? 'active' : ''}`;
         
+        // Делаем карточку кликабельной
+        card.onclick = () => {
+            if (!isActive) {
+                onSelectCallback(skin.id);
+                renderShop(skin.id, onSelectCallback); // Обновляем UI сразу
+            }
+        };
+
         // Название
         const title = document.createElement('div');
         title.className = 'shop-card-title';
         title.innerText = skin.name;
 
-        // --- CANVAS PREVIEW ---
-        // Создаем канвас для реальной отрисовки
+        // Canvas Preview
         const canvas = document.createElement('canvas');
         canvas.className = 'skin-canvas';
         canvas.width = 100;
         canvas.height = 100;
         
-        // Рисуем мяч внутри канваса
         const ctx = canvas.getContext('2d');
-        // Центр (50,50), Радиус 35px, Угол 0
+        // Центр (50,50), Радиус 35px
         drawSkin(ctx, 50, 50, 35, 0, skin.id);
-
-        // Кнопка
-        const btn = document.createElement('button');
-        btn.className = 'btn-secondary';
-        btn.style.width = '100%';
-        btn.style.padding = '10px';
-        btn.style.fontSize = '0.9rem';
-        
-        if (skin.id === activeSkin) {
-            btn.innerText = 'ВЫБРАНО';
-            btn.disabled = true;
-            btn.style.opacity = '0.6';
-        } else {
-            btn.innerText = 'ВЫБРАТЬ';
-            btn.onclick = () => {
-                onSelectCallback(skin.id);
-                renderShop(skin.id, onSelectCallback); // Re-render to update UI
-            };
-        }
 
         card.appendChild(title);
         card.appendChild(canvas);
-        card.appendChild(btn);
+        
         shopContainer.appendChild(card);
     });
 }

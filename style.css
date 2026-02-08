@@ -181,14 +181,13 @@ canvas {
 #settings-screen h2, #shop-screen h2 {
     color: #FF9800;
     font-size: 2.5rem;
-    margin-bottom: 20px; /* Reduced margin */
+    margin-bottom: 20px;
     text-transform: uppercase;
 }
 
-/* --- SHOP GRID (Compact & No Scrollbar) --- */
+/* --- SHOP GRID --- */
 .shop-grid {
     display: grid;
-    /* Адаптивная сетка, минимум 100px ширины на карточку */
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
     gap: 12px;
     width: 90%;
@@ -196,58 +195,56 @@ canvas {
     overflow-y: auto;
     padding: 5px 10px;
     
-    /* Hide Scrollbar Standard & Hacks */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    /* Hide Scrollbar */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
-/* Chrome, Safari, Opera */
 .shop-grid::-webkit-scrollbar {
     display: none;
 }
 
-/* Shop Card (Compact) */
+/* Shop Card (Clickable) */
 .shop-card {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Thinner border */
+    border: 1px solid rgba(255, 255, 255, 0.1); 
     border-radius: 12px;
-    padding: 10px; /* Reduced padding */
+    padding: 15px 10px; /* Немного увеличил вертикальный паддинг т.к. кнопок нет */
     text-align: center;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
+    cursor: pointer; /* Указываем, что это кнопка */
+    touch-action: manipulation;
+}
+
+/* Эффект нажатия */
+.shop-card:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .shop-card.active {
     border-color: #FF9800;
     background: rgba(255, 152, 0, 0.1);
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
 }
 
 .shop-card-title {
     color: white;
     font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 0.9rem; /* Smaller font */
+    margin-bottom: 10px;
+    font-size: 0.95rem;
 }
 
-/* --- CANVAS PREVIEW (Compact) --- */
+/* --- CANVAS PREVIEW --- */
 .skin-canvas {
-    width: 70px; /* Visual size on screen */
+    width: 70px;
     height: 70px;
-    margin-bottom: 8px;
     display: inline-block;
     filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
-}
-
-/* Compact Button inside Shop Card */
-.shop-card button {
-    padding: 8px 0;
-    font-size: 0.8rem;
-    width: 100%;
-    border-radius: 20px;
-    border-width: 1px;
+    pointer-events: none; /* Пропускаем клики сквозь канвас на карточку */
 }
 
 /* ----------------------- */
