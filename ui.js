@@ -78,23 +78,53 @@ export function renderShop(activeSkin, onSelectCallback) {
     shopContainer.innerHTML = ''; // Clear previous
 
     SKINS.forEach(skin => {
-        // Создаем элемент карточки
+        // Создаем карточку
         const card = document.createElement('div');
         const isActive = skin.id === activeSkin;
         card.className = `shop-card ${isActive ? 'active' : ''}`;
         
-        // --- ИСПРАВЛЕНИЕ: Стандартный обработчик Click ---
-        card.addEventListener('click', (e) => {
-            // Останавливаем всплытие, чтобы не триггерить игровые механики под UI
-            e.stopPropagation();
+        // --- FAST TAP LOGIC IMPLEMENTATION ---
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
 
+        // 1. Touch Start: Запоминаем начальные координаты
+        // passive: true улучшает производительность скролла
+        card.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        // 2. Touch End: Проверяем, был ли это тап или скролл
+        card.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            // Вычисляем расстояние, которое прошел палец
+            const distance = Math.sqrt(Math.pow(touchEndX - touchStartX, 2) + Math.pow(touchEndY - touchStartY, 2));
+
+            // Если палец сдвинулся меньше чем на 10px, считаем это кликом
+            if (distance < 10) {
+                // Предотвращаем генерацию mouse-событий (click), чтобы избежать дублирования
+                if (e.cancelable) e.preventDefault();
+
+                if (!isActive) {
+                    onSelectCallback(skin.id);
+                    renderShop(skin.id, onSelectCallback);
+                }
+            }
+        });
+
+        // 3. Click: Фоллбэк для Desktop (мышь)
+        // На мобильных не сработает, если в touchend вызван preventDefault
+        card.addEventListener('click', (e) => {
             if (!isActive) {
-                // Вызываем коллбек смены скина
                 onSelectCallback(skin.id);
-                // Моментально перерисовываем магазин, чтобы обновить выделение
                 renderShop(skin.id, onSelectCallback);
             }
         });
+
+        // -------------------------------------
 
         // Название
         const title = document.createElement('div');
@@ -107,7 +137,6 @@ export function renderShop(activeSkin, onSelectCallback) {
         canvas.width = 100;
         canvas.height = 100;
         
-        // Рисуем превью скина
         const ctx = canvas.getContext('2d');
         // Центр (50,50), Радиус 35px
         drawSkin(ctx, 50, 50, 35, 0, skin.id);
