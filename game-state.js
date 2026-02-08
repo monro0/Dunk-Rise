@@ -1,8 +1,13 @@
-import { HOOP_TYPE, OBSTACLE_TYPE, BALL_RADIUS, HOOP_RADIUS, HOOP_DIAMETER, HOOP_MARGIN } from './config.js';
+import { HOOP_TYPE, OBSTACLE_TYPE, BALL_RADIUS, HOOP_RADIUS, HOOP_DIAMETER, HOOP_MARGIN, SKINS } from './config.js';
 
 // --- FACTORY ---
 
 export function createInitialState(width, height) {
+    // Загрузка скина
+    const savedSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
+    // Находим конфиг скина для цвета шлейфа
+    const skinConfig = SKINS.find(s => s.id === savedSkin) || SKINS[0];
+
     const state = {
         width: width,
         height: height,
@@ -12,6 +17,14 @@ export function createInitialState(width, height) {
         shotTouchedRim: false,
         cameraY: 0,
         cameraTargetY: 0,
+        
+        // Shop State
+        shop: {
+            activeSkin: savedSkin,
+            currentTrailColor: skinConfig.trailColor,
+            unlockedSkins: ['basketball', 'watermelon', 'zombie']
+        },
+
         ball: { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true },
         ballTrail: [],
         hoops: [],
@@ -31,6 +44,15 @@ export function createInitialState(width, height) {
     resetBallToHoop(state, 0);
 
     return state;
+}
+
+export function setActiveSkin(state, skinId) {
+    const skinConfig = SKINS.find(s => s.id === skinId);
+    if (skinConfig) {
+        state.shop.activeSkin = skinId;
+        state.shop.currentTrailColor = skinConfig.trailColor;
+        localStorage.setItem('dunkRise_activeSkin', skinId);
+    }
 }
 
 export function reviveGameLogic(state) {

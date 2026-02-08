@@ -28,10 +28,19 @@
                     <span>BEST: <span id="menu-high-score">0</span></span>
                 </div>
 
-                <!-- Кнопки друг под другом (стиль btn-primary дает margin-bottom) -->
                 <button id="playButton" class="btn-primary">ИГРАТЬ</button>
+                <button id="shopButton" class="btn-primary">МАГАЗИН</button>
                 <button id="settingsButton" class="btn-primary">НАСТРОЙКИ</button>
             </div>
+        </div>
+
+        <!-- ЭКРАН МАГАЗИНА -->
+        <div id="shop-screen" class="hidden">
+            <h2>МАГАЗИН</h2>
+            <div class="shop-grid">
+                <!-- Карточки генерируются в UI.js -->
+            </div>
+            <button id="shopBackBtn" class="btn-secondary" style="margin-top: 30px;">Назад</button>
         </div>
 
         <!-- ЭКРАН НАСТРОЕК -->

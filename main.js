@@ -21,6 +21,7 @@ const ctx = canvas.getContext('2d');
 // Меню
 const playButton = document.getElementById('playButton');
 const settingsButton = document.getElementById('settingsButton');
+const shopButton = document.getElementById('shopButton');
 
 // HUD
 const homeBtn = document.getElementById('homeBtn');
@@ -29,6 +30,9 @@ const topRestartBtn = document.getElementById('topRestartBtn');
 // Настройки
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const vibrationToggle = document.getElementById('vibrationToggle');
+
+// Магазин
+const shopBackBtn = document.getElementById('shopBackBtn');
 
 // Модалки
 const restartButton = document.getElementById('restartButton');
@@ -73,6 +77,21 @@ function goToMenu() {
     
     // Показать меню
     UI.showMainMenu();
+}
+
+// --- LOGIC: Shop ---
+
+function openShop() {
+    const activeSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
+    
+    UI.showShop(activeSkin, (newSkinId) => {
+        // Callback при выборе скина
+        localStorage.setItem('dunkRise_activeSkin', newSkinId);
+    });
+}
+
+function closeShop() {
+    UI.hideShop();
 }
 
 // --- LOGIC: Settings ---
@@ -177,7 +196,7 @@ function addInteractionListener(element, callback, eventName = 'click') {
     } else {
         element.addEventListener('click', callback);
         element.addEventListener('touchend', (e) => {
-            if (element.tagName !== 'INPUT') {
+            if (element.tagName !== 'INPUT' && !element.disabled) {
                 e.preventDefault(); 
                 e.stopPropagation(); 
                 callback();
@@ -189,10 +208,14 @@ function addInteractionListener(element, callback, eventName = 'click') {
 // Main Menu
 addInteractionListener(playButton, startGame);
 addInteractionListener(settingsButton, UI.showSettings);
+addInteractionListener(shopButton, openShop);
 
 // Settings
 addInteractionListener(settingsBackBtn, UI.hideSettings);
 addInteractionListener(vibrationToggle, toggleVibration, 'change');
+
+// Shop
+addInteractionListener(shopBackBtn, closeShop);
 
 // Game HUD
 addInteractionListener(homeBtn, goToMenu);

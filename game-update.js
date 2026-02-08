@@ -9,7 +9,7 @@ export function updateGame(dt, state, callbacks) {
         if (h.scale < h.targetScale) h.scale += 0.08 * dt;
         if (h.type === HOOP_TYPE.MOVING) {
             h.x += h.moveSpeed * h.moveDir * dt;
-            const HOOP_MARGIN = 50; // Or import from config
+            const HOOP_MARGIN = 50; 
             if (h.x > state.width - HOOP_MARGIN) { h.x = state.width - HOOP_MARGIN; h.moveDir = -1; } 
             else if (h.x < HOOP_MARGIN) { h.x = HOOP_MARGIN; h.moveDir = 1; }
             
@@ -132,10 +132,7 @@ function handleScore(targetHoop, state, callbacks) {
     if (targetHoop.isConquered) { recoverBall(state.hoops.indexOf(targetHoop), state); return; }
     targetHoop.isConquered = true;
     
-    // Вызываем тактильную отдачу (Haptic Feedback)
     if (callbacks.onHaptic) {
-        // Если мяч не коснулся кольца (чистое попадание) - отдача сильнее (medium)
-        // Если обычное попадание - отдача легче (light)
         const hapticStyle = !state.shotTouchedRim ? 'medium' : 'light';
         callbacks.onHaptic(hapticStyle);
     }
@@ -153,7 +150,10 @@ function handleScore(targetHoop, state, callbacks) {
     callbacks.onScore(state.score);
 
     createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, !state.shotTouchedRim ? pointsToAdd : 0);
-    createParticles(state, state.ball.x, state.ball.y, 25);
+    
+    // ИСПОЛЬЗУЕМ ЦВЕТ СКИНА ДЛЯ ЧАСТИЦ
+    const particleColor = state.shop.currentTrailColor || '#FF5722';
+    createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
     
     state.currentHoopIndex++;
     state.ball.isSitting = true; state.ball.vx = 0; state.ball.vy = 0;
@@ -170,7 +170,7 @@ function recoverBall(index, state) {
     state.swishCombo = 0; 
     state.currentHoopIndex = index;
     resetBallToHoop(state, index);
-    createParticles(state, state.ball.x, state.ball.y, 10);
+    createParticles(state, state.ball.x, state.ball.y, 10, '#FFFFFF');
 }
 
 function popBall(state, callbacks) {

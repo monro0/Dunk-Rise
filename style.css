@@ -60,13 +60,12 @@ canvas {
 
 /* --- UI COMPONENTS: BUTTONS --- */
 
-/* Единый стиль для всех основных кнопок (Оранжевый) */
 .btn-primary {
     background: #FF5722; 
     color: white;
     border: none;
-    padding: 18px 0; /* Фиксированная высота */
-    width: 240px;    /* Фиксированная ширина для единообразия */
+    padding: 18px 0; 
+    width: 240px;    
     border-radius: 50px;
     font-size: 1.3rem;
     font-weight: bold;
@@ -76,8 +75,8 @@ canvas {
     touch-action: manipulation;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 20px; /* Отступ снизу для стека кнопок */
-    display: block; /* Чтобы margin работал корректно */
+    margin-bottom: 20px; 
+    display: block; 
 }
 
 .btn-primary:hover {
@@ -89,7 +88,6 @@ canvas {
     box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4);
 }
 
-/* Кнопка "Назад" в настройках (можно сделать чуть скромнее или такой же) */
 .btn-secondary {
     background: transparent;
     border: 2px solid rgba(255, 255, 255, 0.2);
@@ -163,15 +161,15 @@ canvas {
     stroke: #FFD700;
 }
 
-/* --- SETTINGS SCREEN --- */
+/* --- SETTINGS & SHOP SCREENS --- */
 
-#settings-screen {
+#settings-screen, #shop-screen {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #2a2c2c; /* Полный экран, не модалка */
+    background-color: #2a2c2c; 
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -180,12 +178,79 @@ canvas {
     animation: fadeIn 0.3s ease-out;
 }
 
-#settings-screen h2 {
+#settings-screen h2, #shop-screen h2 {
     color: #FF9800;
     font-size: 2.5rem;
-    margin-bottom: 40px;
+    margin-bottom: 20px; /* Reduced margin */
     text-transform: uppercase;
 }
+
+/* --- SHOP GRID (Compact & No Scrollbar) --- */
+.shop-grid {
+    display: grid;
+    /* Адаптивная сетка, минимум 100px ширины на карточку */
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+    gap: 12px;
+    width: 90%;
+    max-height: 60%;
+    overflow-y: auto;
+    padding: 5px 10px;
+    
+    /* Hide Scrollbar Standard & Hacks */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Chrome, Safari, Opera */
+.shop-grid::-webkit-scrollbar {
+    display: none;
+}
+
+/* Shop Card (Compact) */
+.shop-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Thinner border */
+    border-radius: 12px;
+    padding: 10px; /* Reduced padding */
+    text-align: center;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.shop-card.active {
+    border-color: #FF9800;
+    background: rgba(255, 152, 0, 0.1);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+}
+
+.shop-card-title {
+    color: white;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.9rem; /* Smaller font */
+}
+
+/* --- CANVAS PREVIEW (Compact) --- */
+.skin-canvas {
+    width: 70px; /* Visual size on screen */
+    height: 70px;
+    margin-bottom: 8px;
+    display: inline-block;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+}
+
+/* Compact Button inside Shop Card */
+.shop-card button {
+    padding: 8px 0;
+    font-size: 0.8rem;
+    width: 100%;
+    border-radius: 20px;
+    border-width: 1px;
+}
+
+/* ----------------------- */
 
 .setting-row {
     display: flex;

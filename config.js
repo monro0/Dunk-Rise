@@ -2,8 +2,30 @@
 
 // Глобальные настройки игры
 export const GameSettings = {
-    vibration: true // По умолчанию включено
+    vibration: true
 };
+
+// --- SKINS CONFIGURATION ---
+export const SKINS = [
+    { 
+        id: 'basketball', 
+        name: 'Баскетбол', 
+        price: 0, 
+        trailColor: '#FF5722' 
+    },
+    { 
+        id: 'watermelon', 
+        name: 'Арбуз', 
+        price: 0, 
+        trailColor: '#F44336' // Красный (мякоть)
+    },
+    { 
+        id: 'zombie', 
+        name: 'Зомби', 
+        price: 0, 
+        trailColor: '#80CBC4' // Бирюзовый (под цвет скина)
+    }
+];
 
 // Физика
 export const GRAVITY = 0.6;
