@@ -91,9 +91,10 @@ export function spawnNewHoop(state, prevHoop = null) {
     let attempts = 0, validPosition = false, newX, newY, type, backboardSide;
 
     do {
+        // --- 1. ВЫБОР ТИПА КОЛЬЦА ---
         type = HOOP_TYPE.NORMAL;
         if (state.score >= 20 && Math.random() < 0.3) type = HOOP_TYPE.SPIKED;
-        else if (prevHoop.type !== HOOP_TYPE.NORMAL) type = HOOP_TYPE.NORMAL;
+        else if (prevHoop.type !== HOOP_TYPE.NORMAL) type = HOOP_TYPE.NORMAL; // После сложного - обычное
         else {
             const rand = Math.random();
             if (state.score >= 10) {
@@ -106,46 +107,73 @@ export function spawnNewHoop(state, prevHoop = null) {
             }
         }
 
-        const minH = state.height * 0.25; 
-        const maxH = state.height * 0.45;
+        // --- 2. РАСЧЕТ ПОЗИЦИИ (Compact Gameplay) ---
+
+        // Высота (Y): Фиксированный диапазон в пикселях (200-320px).
+        // Это предотвращает огромные прыжки на высоких экранах.
+        const minH = 200; 
+        const maxH = 320; 
         newY = prevHoop.y - (minH + Math.random() * (maxH - minH));
 
-        const minShift = HOOP_DIAMETER * 1.1; 
-        const maxShift = state.width * 0.6; 
+        // Горизонталь (X): Сдвиг влево или вправо на 80-250px.
+        const minShift = 80;  
+        const maxShift = 250; 
+        
         let possibleSides = [];
+        // Проверяем место слева
         if (prevHoop.x - minShift > HOOP_MARGIN) possibleSides.push('left');
+        // Проверяем место справа
         if (prevHoop.x + minShift < state.width - HOOP_MARGIN) possibleSides.push('right');
-        if (possibleSides.length === 0) possibleSides = ['left', 'right'];
+        
+        if (possibleSides.length === 0) possibleSides = ['left', 'right']; // Редкий случай
 
         const side = possibleSides[Math.floor(Math.random() * possibleSides.length)];
         backboardSide = 0;
 
         if (side === 'left') {
-            const leftLimit = Math.max(HOOP_MARGIN, prevHoop.x - maxShift);
-            newX = leftLimit + Math.random() * (prevHoop.x - minShift - leftLimit);
-            backboardSide = -1;
+            const availableSpace = prevHoop.x - HOOP_MARGIN;
+            // Сдвигаем влево, но не дальше чем есть места
+            const shift = minShift + Math.random() * (Math.min(availableSpace, maxShift) - minShift);
+            newX = prevHoop.x - shift;
+            backboardSide = -1; // Щит будет справа от кольца
         } else {
-            const rightLimit = Math.min(state.width - HOOP_MARGIN, prevHoop.x + maxShift);
-            newX = (prevHoop.x + minShift) + Math.random() * (rightLimit - (prevHoop.x + minShift));
-            backboardSide = 1;
+            const availableSpace = state.width - HOOP_MARGIN - prevHoop.x;
+            // Сдвигаем вправо
+            const shift = minShift + Math.random() * (Math.min(availableSpace, maxShift) - minShift);
+            newX = prevHoop.x + shift;
+            backboardSide = 1; // Щит будет слева от кольца
         }
 
+        // Корректировка для Щита (чтобы не влезал в стены)
         if (type === HOOP_TYPE.BACKBOARD) {
-            const safeDistance = HOOP_RADIUS + 25; 
-            if (backboardSide === -1) { if (newX - safeDistance < 0) newX = safeDistance + 5; } 
-            else { if (newX + safeDistance > state.width) newX = state.width - safeDistance - 5; }
+            const safeDistance = HOOP_RADIUS + 30; 
+            if (backboardSide === -1) { 
+                if (newX < safeDistance) newX = safeDistance; 
+            } else { 
+                if (newX > state.width - safeDistance) newX = state.width - safeDistance; 
+            }
         }
 
+        // Проверка: достаточно ли далеко от предыдущего (чтобы не накладывались)
         const dist = Math.sqrt(Math.pow(newX - prevHoop.x, 2) + Math.pow(newY - prevHoop.y, 2));
-        if (dist > HOOP_DIAMETER * 1.5) validPosition = true;
+        if (dist > 150) validPosition = true;
+
         attempts++;
     } while (!validPosition && attempts < 20);
 
-    if (!validPosition) { newY = prevHoop.y - state.height * 0.3; newX = state.width / 2; }
+    // Фоллбэк (если не нашли место за 20 попыток)
+    if (!validPosition) { 
+        newY = prevHoop.y - 250; 
+        newX = state.width / 2; 
+        type = HOOP_TYPE.NORMAL;
+    }
+
     addHoop(state, newX, newY, type, backboardSide);
     
+    // --- 3. ДОБАВЛЕНИЕ ВЕТРА (Опционально) ---
     state.currentObstacle = null;
     if (state.score >= 15 && Math.random() < 0.30) {
+        // ... (Ветер - без изменений)
         let forceMult = Math.random() < 0.5 ? 0.5 : 1.0;
         const direction = newX > prevHoop.x ? 1 : -1;
         let dir = Math.random() < 0.7 ? -direction : direction;
@@ -163,5 +191,6 @@ export function spawnNewHoop(state, prevHoop = null) {
         };
     }
 
+    // --- 4. ОЧИСТКА ---
     if (state.hoops.length > 7) { state.hoops.shift(); state.currentHoopIndex--; }
 }

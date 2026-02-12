@@ -37,31 +37,45 @@ export function drawGame(ctx, state) {
         }
     }
 
-    // Линия прицеливания (только если мяч сидит)
+        // Aim Line (12 Dots, Cleaner Look)
     if (state.isDragging && state.ball.isSitting && state.ball.visible) {
         let dx = state.dragStart.x - state.dragCurrent.x;
         let dy = state.dragStart.y - state.dragCurrent.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
+        
         if (dist > MAX_PULL_DISTANCE) {
             const ratio = MAX_PULL_DISTANCE / dist;
             dx *= ratio; dy *= ratio;
         }
         
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        // 1. ЦВЕТ ОТ СКИНА
+        ctx.fillStyle = state.shop.currentTrailColor || '#FF5722';
         
         let sx = state.ball.x;
         let sy = state.ball.y;
         let svx = dx * DRAG_POWER;
         let svy = dy * DRAG_POWER;
         
-        for(let i=0; i<20; i++) {
-            sx += svx * 2; sy += svy * 2; svy += GRAVITY * 2;
+        // 2. 12 ТОЧЕК
+        for(let i=0; i<12; i++) {
+            // Увеличили шаг симуляции с 2 до 3.
+            // Это делает расстояние между точками больше,
+            // чтобы линия оставалась достаточно длинной при меньшем числе точек.
+            sx += svx * 3;
+            sy += svy * 3;
+            svy += GRAVITY * 3;
+
             if (sx < BALL_RADIUS) { sx = BALL_RADIUS; svx = -svx * 0.6; } 
             else if (sx > state.width - BALL_RADIUS) { sx = state.width - BALL_RADIUS; svx = -svx * 0.6; }
-            ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI*2); ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(sx, sy, 3, 0, Math.PI*2); // Размер точки 3px
+            ctx.fill();
         }
     }
+
+
+
 
     // Сам Мяч
     if (state.ball.visible) {

@@ -93,7 +93,7 @@ function checkCollisions(dt, state, callbacks) {
 
             const distToCenter = Math.abs(state.ball.x - h.x);
             const distY = Math.abs(state.ball.y - h.y);
-            if (distToCenter < 15 && distY < 15) { state.ball.x += (h.x - state.ball.x) * 0.05 * dt; }
+            if (distToCenter < 10 && distY < 10) { state.ball.x += (h.x - state.ball.x) * 0.015 * dt; }
 
             if (h.type === HOOP_TYPE.BACKBOARD) {
                 const boardX = h.x + (HOOP_RADIUS + 10) * h.backboardSide;
