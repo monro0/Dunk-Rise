@@ -10,8 +10,6 @@ import { initAudio, playSound } from './audio.js';
 let lastTime = 0;
 let hasUsedRevive = false;
 let reviveTimerInterval = null;
-
-// Главный объект состояния игры
 let gameState = null;
 
 // --- DOM INIT ---
@@ -24,24 +22,17 @@ const playButton = document.getElementById('playButton');
 const settingsButton = document.getElementById('settingsButton');
 const shopButton = document.getElementById('shopButton');
 
-// HUD
+// HUD & Shop
 const homeBtn = document.getElementById('homeBtn');
 const topRestartBtn = document.getElementById('topRestartBtn');
-
-// Настройки
-const settingsBackBtn = document.getElementById('settingsBackBtn');
-const vibrationToggle = document.getElementById('vibrationToggle');
-const soundToggle = document.getElementById('soundToggle'); // <--- НОВАЯ КНОПКА
-
-// Магазин
 const shopBackBtn = document.getElementById('shopBackBtn');
+const settingsBackBtn = document.getElementById('settingsBackBtn');
 
-// Модалки
+// Modals
 const restartButton = document.getElementById('restartButton');
 const goHomeButton = document.getElementById('goHomeButton');
 const adButton = document.getElementById('adButton');
 const closeSecondChanceBtn = document.getElementById('closeSecondChance');
-
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -91,54 +82,40 @@ function closeShop() {
     UI.hideShop();
 }
 
-// --- LOGIC: Settings (Sound & Vibration) ---
+// --- LOGIC: Settings ---
 
 function loadSettings() {
     // 1. Вибрация
     const savedVib = localStorage.getItem('dunkRise_vibration');
-    if (savedVib !== null) {
-        GameSettings.vibration = (savedVib === 'true');
-    } else {
-        GameSettings.vibration = true; 
-    }
+    GameSettings.vibration = savedVib === null ? true : (savedVib === 'true');
 
     // 2. Звук
     const savedSound = localStorage.getItem('dunkRise_sound');
-    if (savedSound !== null) {
-        GameSettings.sound = (savedSound === 'true');
-    } else {
-        GameSettings.sound = true; 
-    }
+    GameSettings.sound = savedSound === null ? true : (savedSound === 'true');
 
     UI.syncSettingsUI(GameSettings);
 }
 
-function toggleVibration(e) {
-    // Получаем состояние из чекбокса (e.target может быть undefined при ручном вызове, берем сам элемент)
-    const checkbox = e.target || vibrationToggle;
-    const isChecked = checkbox.checked;
-    
+// Функции обновления (вызываются переключателями)
+function updateVibrationState(isChecked) {
     GameSettings.vibration = isChecked;
     localStorage.setItem('dunkRise_vibration', isChecked);
     
-    // Тестовая вибрация при включении
+    // Тест вибрации
     if (isChecked && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
     }
 }
 
-function toggleSound(e) {
-    const checkbox = e.target || soundToggle;
-    const isChecked = checkbox.checked;
-    
+function updateSoundState(isChecked) {
     GameSettings.sound = isChecked;
     localStorage.setItem('dunkRise_sound', isChecked);
     
-    // Тестовый звук при включении
+    // Тест звука
     if (isChecked) playSound('rim', 0.5);
 }
 
-// --- LOGIC: Game Over Flow ---
+// --- LOGIC: Game Over ---
 
 function onDeath(finalScore) {
     playSound('over', 0.8);
@@ -213,11 +190,14 @@ const logicCallbacks = {
     }
 };
 
-// --- EVENTS (Button Wrappers) ---
+// --- EVENTS ---
+
+// 1. Стандартные кнопки
 function addInteractionListener(element, callback) {
     if (!element) return;
     element.addEventListener('click', callback);
     element.addEventListener('touchend', (e) => {
+        // Игнорируем input внутри label, чтобы не ломать чекбоксы
         if (element.tagName !== 'INPUT' && !element.disabled) {
             e.preventDefault(); 
             e.stopPropagation(); 
@@ -226,45 +206,60 @@ function addInteractionListener(element, callback) {
     }, { passive: false });
 }
 
-// Main Menu
 addInteractionListener(playButton, startGame);
 addInteractionListener(settingsButton, UI.showSettings);
 addInteractionListener(shopButton, openShop);
-
-// Shop & HUD
 addInteractionListener(shopBackBtn, closeShop);
 addInteractionListener(homeBtn, goToMenu);
 addInteractionListener(topRestartBtn, performFullRestart);
-
-// Game Over & Modals
 addInteractionListener(restartButton, performFullRestart);
 addInteractionListener(goHomeButton, goToMenu);
 addInteractionListener(adButton, performRevive);
 addInteractionListener(closeSecondChanceBtn, performCloseSecondChance);
-
-// --- SETTINGS EVENTS (INSTANT TOGGLE FIX) ---
-// Кнопка назад работает стандартно
 addInteractionListener(settingsBackBtn, UI.hideSettings);
 
-// Тумблер Вибрации (Без задержек)
-if (vibrationToggle) {
-    vibrationToggle.addEventListener('click', toggleVibration); // Для ПК
-    vibrationToggle.addEventListener('touchend', (e) => {
-        e.preventDefault(); // Отменяем ожидание дабл-тапа и зум
-        vibrationToggle.checked = !vibrationToggle.checked; // Меняем галочку вручную
-        toggleVibration({ target: vibrationToggle }); // Вызываем логику
-    }, { passive: false });
+// 2. БЫСТРЫЕ ПЕРЕКЛЮЧАТЕЛИ (FIX DELAY)
+// Эта функция вешает обработчик на весь LABEL, чтобы клик срабатывал мгновенно
+function setupFastToggle(inputId, onChangeCallback) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    // Находим родительский label (вся кнопка)
+    const label = input.closest('label');
+
+    // Логика переключения
+    const toggle = () => {
+        const newState = input.checked;
+        onChangeCallback(newState);
+    };
+
+    // Стандартное поведение (для ПК)
+    input.addEventListener('change', toggle);
+
+    // Мгновенное нажатие (для Телефонов)
+    if (label) {
+        label.addEventListener('touchend', (e) => {
+            // Отменяем стандартное поведение (которое ждет 300мс)
+            if (e.cancelable) e.preventDefault();
+            
+            // Вручную меняем состояние галочки
+            input.checked = !input.checked;
+            
+            // Запускаем логику
+            toggle();
+        }, { passive: false });
+        
+        // Предотвращаем двойное срабатывание от клика
+        label.addEventListener('click', (e) => {
+            // Если событие пришло от мыши - ок, если от тача - мы его уже обработали
+            // e.preventDefault() в touchend обычно достаточно
+        });
+    }
 }
 
-// Тумблер Звука (Без задержек)
-if (soundToggle) {
-    soundToggle.addEventListener('click', toggleSound); // Для ПК
-    soundToggle.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        soundToggle.checked = !soundToggle.checked;
-        toggleSound({ target: soundToggle });
-    }, { passive: false });
-}
+// Подключаем наши тумблеры через быструю функцию
+setupFastToggle('vibrationToggle', updateVibrationState);
+setupFastToggle('soundToggle', updateSoundState);
 
 
 // --- INPUT HANDLING ---
@@ -278,8 +273,6 @@ function getPos(e) {
 canvas.addEventListener('mousedown', (e) => { if(gameState) GameInput.handleStartDrag(getPos(e), gameState); });
 window.addEventListener('mousemove', (e) => { if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
 window.addEventListener('mouseup', () => { if(gameState) GameInput.handleEndDrag(gameState); });
-
-// Touch Events (Passive: false для предотвращения скролла игры)
 canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState) GameInput.handleStartDrag(getPos(e), gameState); }, {passive: false});
 window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); }, {passive: false});
 window.addEventListener('touchend', (e) => { e.preventDefault(); if(gameState) GameInput.handleEndDrag(gameState); }, {passive: false});
@@ -298,7 +291,7 @@ function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     loadSettings();
-    initAudio(); // Загрузка звуков
+    initAudio();
     resize();
     UI.showMainMenu();
     lastTime = performance.now();
