@@ -5,7 +5,7 @@ export function drawGame(ctx, state) {
     ctx.save();
     ctx.translate(0, state.cameraY);
 
-    // Wind Logic
+    // 1. ФОНОВЫЕ ЭФФЕКТЫ (Ветер)
     if (state.currentObstacle && state.currentObstacle.type === OBSTACLE_TYPE.WIND) {
         const left = state.currentObstacle.x - state.currentObstacle.w / 2;
         const top = state.currentObstacle.y - state.currentObstacle.h / 2;
@@ -15,10 +15,16 @@ export function drawGame(ctx, state) {
         });
     }
 
-    // Ball Trail
+    // 2. СЛОЙ 1: ЗАДНИЕ ЧАСТИ КОЛЕЦ (Щит, Сетка, Задняя дужка)
+    state.hoops.forEach((h, i) => {
+        const isNextHoop = (i === state.currentHoopIndex + 1);
+        drawHoopBackElements(ctx, h, isNextHoop);
+    });
+
+    // 3. СЛОЙ 2: МЯЧ И ШЛЕЙФ
+    // Шлейф
     if (!state.ball.isSitting && state.ball.visible && state.ballTrail.length > 1) {
         const trailColor = state.shop.currentTrailColor || '#FF5722';
-        
         for (let i = 0; i < state.ballTrail.length; i++) {
             const pos = state.ballTrail[i];
             const ratio = i / state.ballTrail.length; 
@@ -31,7 +37,7 @@ export function drawGame(ctx, state) {
         }
     }
 
-    // Aim Line
+    // Линия прицеливания (только если мяч сидит)
     if (state.isDragging && state.ball.isSitting && state.ball.visible) {
         let dx = state.dragStart.x - state.dragCurrent.x;
         let dy = state.dragStart.y - state.dragCurrent.y;
@@ -50,31 +56,26 @@ export function drawGame(ctx, state) {
         let svy = dy * DRAG_POWER;
         
         for(let i=0; i<20; i++) {
-            sx += svx * 2;
-            sy += svy * 2;
-            svy += GRAVITY * 2;
-
+            sx += svx * 2; sy += svy * 2; svy += GRAVITY * 2;
             if (sx < BALL_RADIUS) { sx = BALL_RADIUS; svx = -svx * 0.6; } 
             else if (sx > state.width - BALL_RADIUS) { sx = state.width - BALL_RADIUS; svx = -svx * 0.6; }
-
-            ctx.beginPath();
-            ctx.arc(sx, sy, 4, 0, Math.PI*2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI*2); ctx.fill();
         }
     }
 
-    // Hoops
-    state.hoops.forEach((h, i) => drawHoopBack(ctx, h, i, state.currentHoopIndex));
-
-    // BALL DRAWING
+    // Сам Мяч
     if (state.ball.visible) {
-        // Вызываем универсальную функцию отрисовки скина
         drawSkin(ctx, state.ball.x, state.ball.y, BALL_RADIUS, state.ball.angle, state.shop.activeSkin);
     }
 
-    state.hoops.forEach((h, i) => drawHoopFront(ctx, h, i, state.currentHoopIndex));
+    // 4. СЛОЙ 3: ПЕРЕДНИЕ ЧАСТИ КОЛЕЦ (Передняя дужка)
+    // Это создает иллюзию того, что мяч внутри
+    state.hoops.forEach((h, i) => {
+        const isNextHoop = (i === state.currentHoopIndex + 1);
+        drawHoopFrontElements(ctx, h, isNextHoop);
+    });
     
-    // Particles
+    // 5. ЧАСТИЦЫ (поверх всего)
     state.particles.forEach(p => {
         if (p.type === 'dot') { 
             ctx.globalAlpha = p.life; ctx.fillStyle = p.color; 
@@ -94,10 +95,6 @@ export function drawGame(ctx, state) {
     ctx.restore();
 }
 
-/**
- * Универсальная функция отрисовки скина.
- * Используется и в игре (с игровыми координатами), и в UI (для превью).
- */
 export function drawSkin(ctx, x, y, r, angle, skinId) {
     ctx.save();
     ctx.translate(x, y);
@@ -274,67 +271,166 @@ function drawZombie(ctx, r) {
     ctx.stroke();
 }
 
-// --- HOOP DRAWING FUNCTIONS (Unchanged) ---
+// --- SPLIT HOOP RENDERING (3D EFFECT) ---
 
-function drawHoopBack(ctx, h, index, currentIdx) {
+// --- 3D HOOP RENDERING (Clean Shield + Juicy Spikes) ---
+
+function drawHoopBackElements(ctx, h, isNextHoop) {
     if(h.scale <= 0) return;
+    
     ctx.save();
     ctx.translate(h.x, h.y);
     ctx.scale(h.scale, h.scale);
-    
+
+    // Цвета обода
+    const rimColorDark = h.type === HOOP_TYPE.SPIKED ? '#37474F' : (isNextHoop ? '#D84315' : '#757575'); 
+    const rimLineWidth = 8;
+
+    // 1. ЩИТ (Backboard) - "Как было", но без оранжевого
     if (h.type === HOOP_TYPE.BACKBOARD) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 2;
-        const boardX = (HOOP_RADIUS + 10) * h.backboardSide;
-        ctx.fillRect(boardX - 5, -80, 10, 80); ctx.strokeRect(boardX - 5, -80, 10, 80);
-        ctx.beginPath(); ctx.moveTo(HOOP_RADIUS * h.backboardSide * 0.5, 0); ctx.lineTo(boardX, -20); ctx.stroke();
+        ctx.save();
+        const boardX = (HOOP_RADIUS + 15) * h.backboardSide;
+        
+        // Рисуем стойку (просто и чисто)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; 
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; 
+        ctx.lineWidth = 2;
+        
+        const bw = 12; // Ширина стойки
+        const bh = 85; // Высота
+        
+        // Сама палка
+        ctx.fillRect(boardX - (bw/2), -bh - 10, bw, bh); 
+        ctx.strokeRect(boardX - (bw/2), -bh - 10, bw, bh);
+        
+        // Крепление к кольцу (диагональная палка)
+        ctx.beginPath(); 
+        ctx.moveTo(HOOP_RADIUS * h.backboardSide * 0.5, 0); 
+        ctx.lineTo(boardX, -25); 
+        ctx.stroke();
+
+        ctx.restore();
     }
 
-    ctx.beginPath(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 2;
-    const topW = HOOP_RADIUS, botW = HOOP_RADIUS * 0.6, netH = 55;
-    for(let i=0; i<=4; i++) {
-        let x1 = -topW + (topW*2 * i/4), x2 = -botW + (botW*2 * i/4);
-        ctx.moveTo(x1, 0); ctx.lineTo(x2, netH);
+    // 2. СЕТКА (Net)
+    ctx.strokeStyle = 'rgba(158, 158, 158, 0.3)'; 
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    
+    const topW = HOOP_RADIUS;
+    const botW = HOOP_RADIUS * 0.6;
+    const netH = 55;
+    
+    ctx.beginPath();
+    for(let i = 0; i <= 6; i++) {
+        let x1 = -topW + (topW * 2 * i / 6);
+        let x2 = -botW + (botW * 2 * i / 6);
+        ctx.moveTo(x1, 0);
+        ctx.quadraticCurveTo(x1 * 0.9, netH * 0.5, x2, netH); // Легкий изгиб сетки
     }
-    ctx.moveTo(-topW*0.8, netH*0.3); ctx.lineTo(topW*0.8, netH*0.3);
-    ctx.moveTo(-topW*0.6, netH*0.6); ctx.lineTo(topW*0.6, netH*0.6);
-    ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH);
+    ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH); // Низ сетки
     ctx.stroke();
+
+    // 3. ЗАДНЯЯ ЧАСТЬ ОБОДА (Back Rim)
+    
+    // Если это ШИПЫ - рисуем задний ряд шипов
+    if (h.type === HOOP_TYPE.SPIKED) {
+        drawSpikes(ctx, true); // true = задний слой
+    }
+
+    ctx.strokeStyle = rimColorDark;
+    ctx.lineWidth = rimLineWidth;
+    ctx.beginPath();
+    // Верхняя дуга эллипса
+    ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, Math.PI, Math.PI * 2, false); 
+    ctx.stroke();
+
     ctx.restore();
 }
 
-function drawHoopFront(ctx, h, index, currentIdx) {
+function drawHoopFrontElements(ctx, h, isNextHoop) {
     if(h.scale <= 0) return;
+    
     ctx.save();
     ctx.translate(h.x, h.y);
     ctx.scale(h.scale, h.scale);
-    
-    let color = (index === currentIdx + 1) ? '#FF5722' : '#aeaeae'; 
-    ctx.strokeStyle = color; ctx.lineWidth = 8; 
-    ctx.beginPath(); ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI*2); ctx.stroke();
 
+    let rimColor;
     if (h.type === HOOP_TYPE.SPIKED) {
-        ctx.fillStyle = h.isConquered ? '#444444' : 'red'; 
+        rimColor = '#546E7A'; // Металлический цвет для шипованного кольца
+    } else {
+        rimColor = isNextHoop ? '#FF5722' : '#BDBDBD';
+    }
+    const rimLineWidth = 8;
+
+    // 1. ПЕРЕДНИЕ ШИПЫ (если есть)
+    // Мяч будет рисоваться ПОД ними, так как эта функция вызывается после отрисовки мяча
+    if (h.type === HOOP_TYPE.SPIKED) {
+        drawSpikes(ctx, false); // false = передний слой
+    }
+
+    // 2. ПЕРЕДНЯЯ ЧАСТЬ ОБОДА (Front Rim)
+    ctx.strokeStyle = rimColor;
+    ctx.lineWidth = rimLineWidth;
+    ctx.beginPath();
+    // Нижняя дуга эллипса
+    ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI); 
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+// --- НОВАЯ ФУНКЦИЯ ОТРИСОВКИ СОЧНЫХ ШИПОВ ---
+function drawSpikes(ctx, isBackLayer) {
+    const spikeCountTotal = 10; 
+    const spikeLen = 16; // Длинные шипы
+    const spikeWidth = 0.25; // Ширина основания в радианах
+
+    // Цвета шипов
+    const colorFill = isBackLayer ? '#B71C1C' : '#FF5252'; // Темно-красный сзади, ярко-красный спереди
+    const colorStroke = isBackLayer ? '#212121' : '#B71C1C';
+
+    // Определяем диапазон углов для отрисовки
+    // Back Layer: рисуем сверху (PI .. 2PI)
+    // Front Layer: рисуем снизу (0 .. PI)
+    const startAngle = isBackLayer ? Math.PI : 0;
+    const endAngle = isBackLayer ? Math.PI * 2 : Math.PI;
+
+    for(let i = 0; i < spikeCountTotal; i++) {
+        const angle = (i / spikeCountTotal) * Math.PI * 2;
         
-        const spikeCount = 8;
-        for(let i=0; i<spikeCount; i++) {
-            const angle = (i / spikeCount) * Math.PI * 2;
-            const sx = Math.cos(angle) * HOOP_RADIUS;
-            const sy = Math.sin(angle) * (HOOP_RADIUS * 0.35);
+        // Проверяем видимость (с небольшим запасом, чтобы не обрезалось резко)
+        let isVisible = false;
+        if (isBackLayer) {
+            if (angle > Math.PI + 0.1 && angle < Math.PI * 2 - 0.1) isVisible = true;
+        } else {
+            if (angle > 0.1 && angle < Math.PI - 0.1) isVisible = true;
+        }
+
+        if (isVisible) {
+            // Координаты основания на эллипсе
+            const bx1 = Math.cos(angle - spikeWidth/2) * HOOP_RADIUS;
+            const by1 = Math.sin(angle - spikeWidth/2) * (HOOP_RADIUS * 0.35);
             
+            const bx2 = Math.cos(angle + spikeWidth/2) * HOOP_RADIUS;
+            const by2 = Math.sin(angle + spikeWidth/2) * (HOOP_RADIUS * 0.35);
+
+            // Координаты острия (торчит наружу)
+            const tipX = Math.cos(angle) * (HOOP_RADIUS + spikeLen);
+            const tipY = Math.sin(angle) * ((HOOP_RADIUS * 0.35) + spikeLen);
+
+            ctx.fillStyle = colorFill;
+            ctx.strokeStyle = colorStroke;
+            ctx.lineWidth = 1;
+
             ctx.beginPath();
-            ctx.moveTo(sx, sy);
+            ctx.moveTo(bx1, by1);
+            ctx.lineTo(tipX, tipY); // Пик
+            ctx.lineTo(bx2, by2);
+            ctx.closePath();
             
-            const tipX = Math.cos(angle) * (HOOP_RADIUS + 10);
-            const tipY = Math.sin(angle) * ((HOOP_RADIUS * 0.35) + 10);
-            
-            const baseAngle1 = angle - 0.1;
-            const baseAngle2 = angle + 0.1;
-            
-            ctx.lineTo(Math.cos(baseAngle1) * HOOP_RADIUS, Math.sin(baseAngle1) * (HOOP_RADIUS * 0.35));
-            ctx.lineTo(tipX, tipY);
-            ctx.lineTo(Math.cos(baseAngle2) * HOOP_RADIUS, Math.sin(baseAngle2) * (HOOP_RADIUS * 0.35));
             ctx.fill();
+            ctx.stroke();
         }
     }
-    ctx.restore();
 }
