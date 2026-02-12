@@ -2,7 +2,8 @@
 
 // Глобальные настройки игры
 export const GameSettings = {
-    vibration: true
+    vibration: true,
+    sound: true // <--- Добавили
 };
 
 // --- SKINS CONFIGURATION ---

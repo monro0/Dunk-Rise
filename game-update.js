@@ -1,5 +1,6 @@
 import { GRAVITY, BALL_RADIUS, HOOP_RADIUS, HOOP_TYPE, OBSTACLE_TYPE } from './config.js';
 import { spawnNewHoop, resetBallToHoop } from './game-state.js';
+import { playSound } from './audio.js'; // <--- ИМПОРТ ЗВУКА
 
 export function updateGame(dt, state, callbacks) {
     state.cameraY += (state.cameraTargetY - state.cameraY) * 0.1;
@@ -50,9 +51,18 @@ export function updateGame(dt, state, callbacks) {
             }
         }
 
-        // Walls
-        if (state.ball.x < BALL_RADIUS) { state.ball.x = BALL_RADIUS; state.ball.vx *= -0.6; } 
-        else if (state.ball.x > state.width - BALL_RADIUS) { state.ball.x = state.width - BALL_RADIUS; state.ball.vx *= -0.6; }
+        // Walls (С ЗВУКОМ УДАРА)
+        if (state.ball.x < BALL_RADIUS) { 
+            state.ball.x = BALL_RADIUS; 
+            state.ball.vx *= -0.55; // Гасим скорость
+            // Если скорость удара достаточная, играем звук
+            if (Math.abs(state.ball.vx) > 3) playSound('bounce', 0.4); 
+        } 
+        else if (state.ball.x > state.width - BALL_RADIUS) { 
+            state.ball.x = state.width - BALL_RADIUS; 
+            state.ball.vx *= -0.55; // Гасим скорость
+            if (Math.abs(state.ball.vx) > 3) playSound('bounce', 0.4);
+        }
 
         let safeIndex = Math.max(0, state.currentHoopIndex - 1);
         let safeRing = state.hoops[safeIndex];
@@ -81,6 +91,7 @@ function checkCollisions(dt, state, callbacks) {
         if (idx >= 0 && idx < state.hoops.length) {
             let h = state.hoops[idx];
             
+            // Шипы (Spiked Hoop)
             if (h.type === HOOP_TYPE.SPIKED && !h.isConquered && h === state.hoops[state.currentHoopIndex + 1]) {
                 const rims = [h.x - HOOP_RADIUS, h.x + HOOP_RADIUS];
                 let hitSpike = false;
@@ -93,8 +104,14 @@ function checkCollisions(dt, state, callbacks) {
 
             const distToCenter = Math.abs(state.ball.x - h.x);
             const distY = Math.abs(state.ball.y - h.y);
-            if (distToCenter < 10 && distY < 10) { state.ball.x += (h.x - state.ball.x) * 0.015 * dt; }
+            
+            // МАГНИТ (Ослабленная версия)
+            // Помогает только если почти попал (dist < 10)
+            if (distToCenter < 10 && distY < 10) { 
+                state.ball.x += (h.x - state.ball.x) * 0.015 * dt; 
+            }
 
+            // Щит (Backboard)
             if (h.type === HOOP_TYPE.BACKBOARD) {
                 const boardX = h.x + (HOOP_RADIUS + 10) * h.backboardSide;
                 const boardY = h.y - 40; 
@@ -102,15 +119,25 @@ function checkCollisions(dt, state, callbacks) {
                     state.ball.vx = -h.backboardSide * Math.abs(state.ball.vx) * 0.8;
                     if (Math.abs(state.ball.vx) < 2) state.ball.vx = -h.backboardSide * 4;
                     state.ball.x = boardX - (h.backboardSide * (BALL_RADIUS + 5 + 1));
+                    
+                    playSound('bounce', 0.6); // <--- ЗВУК ЩИТА
                 }
             }
 
+            // Дужка (Rim)
             [h.x - HOOP_RADIUS, h.x + HOOP_RADIUS].forEach(rx => {
                 const dx = state.ball.x - rx;
                 const dy = state.ball.y - h.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist < BALL_RADIUS + 5) {
-                    if (!state.ball.isSitting) state.shotTouchedRim = true;
+                    if (!state.ball.isSitting) {
+                        state.shotTouchedRim = true;
+                        
+                        // Звук удара о дужку (только если сильный удар)
+                        const speed = Math.sqrt(state.ball.vx**2 + state.ball.vy**2);
+                        if (speed > 4) playSound('rim', 0.5); // <--- ЗВУК ДУЖКИ
+                    }
+                    
                     const nx = dx / dist; const ny = dy / dist;
                     const vDotN = state.ball.vx * nx + state.ball.vy * ny;
                     state.ball.vx -= 1.4 * vDotN * nx;
@@ -120,6 +147,7 @@ function checkCollisions(dt, state, callbacks) {
                 }
             });
 
+            // Проверка гола
             if (state.ball.vy > 0 && state.ball.y > h.y - 15 && state.ball.y < h.y + 25 && Math.abs(state.ball.x - h.x) < HOOP_RADIUS * 0.85) {
                 if (idx > state.currentHoopIndex) handleScore(h, state, callbacks);
                 else recoverBall(idx, state);
@@ -141,9 +169,11 @@ function handleScore(targetHoop, state, callbacks) {
     if (!state.shotTouchedRim) {
         state.swishCombo++;
         pointsToAdd = state.swishCombo;
+        playSound('net', 1.0); // <--- ЗВУК: Чистый SWISH!
     } else {
         state.swishCombo = 0;
         pointsToAdd = 1;
+        playSound('net', 0.6); // <--- ЗВУК: Обычный гол
     }
     
     state.score += pointsToAdd;
@@ -151,7 +181,6 @@ function handleScore(targetHoop, state, callbacks) {
 
     createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, !state.shotTouchedRim ? pointsToAdd : 0);
     
-    // ИСПОЛЬЗУЕМ ЦВЕТ СКИНА ДЛЯ ЧАСТИЦ
     const particleColor = state.shop.currentTrailColor || '#FF5722';
     createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
     
@@ -177,6 +206,10 @@ function popBall(state, callbacks) {
     if (!state.ball.visible) return;
     state.ball.visible = false;
     createParticles(state, state.ball.x, state.ball.y, 40, '#480d5b'); 
+    
+    // Тут можно добавить звук лопающегося мяча, если найдешь (например, 'bounce' громко)
+    playSound('bounce', 0.8);
+    
     setTimeout(() => { 
         callbacks.onDeath(state.score);
         state.isGameOver = true; 

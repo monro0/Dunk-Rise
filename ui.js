@@ -18,6 +18,8 @@ const gameHud = document.getElementById('game-hud');
 // Settings Elements
 const settingsScreen = document.getElementById('settings-screen');
 const vibrationToggle = document.getElementById('vibrationToggle');
+const soundToggle = document.getElementById('soundToggle');
+
 
 // Shop Elements
 const shopScreen = document.getElementById('shop-screen');
@@ -56,6 +58,10 @@ export function hideSettings() {
 export function syncSettingsUI(settings) {
     if (vibrationToggle) {
         vibrationToggle.checked = settings.vibration;
+    }
+    // СИНХРОНИЗАЦИЯ ЗВУКА
+    if (soundToggle) {
+        soundToggle.checked = settings.sound;
     }
 }
 

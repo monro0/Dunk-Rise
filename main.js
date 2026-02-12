@@ -5,6 +5,7 @@ import * as GameUpdate from './game-update.js';
 import * as GameDraw from './game-draw.js';
 import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
+import { initAudio, playSound } from './audio.js'; // <--- ИМПОРТ ЗВУКА
 
 let lastTime = 0;
 let hasUsedRevive = false;
@@ -30,6 +31,7 @@ const topRestartBtn = document.getElementById('topRestartBtn');
 // Настройки
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const vibrationToggle = document.getElementById('vibrationToggle');
+const soundToggle = document.getElementById('soundToggle');
 
 // Магазин
 const shopBackBtn = document.getElementById('shopBackBtn');
@@ -97,12 +99,22 @@ function closeShop() {
 // --- LOGIC: Settings ---
 
 function loadSettings() {
+    // Вибрация
     const savedVib = localStorage.getItem('dunkRise_vibration');
     if (savedVib !== null) {
         GameSettings.vibration = (savedVib === 'true');
     } else {
         GameSettings.vibration = true; 
     }
+
+    // Звук (НОВОЕ)
+    const savedSound = localStorage.getItem('dunkRise_sound');
+    if (savedSound !== null) {
+        GameSettings.sound = (savedSound === 'true');
+    } else {
+        GameSettings.sound = true;
+    }
+
     UI.syncSettingsUI(GameSettings);
 }
 
@@ -112,9 +124,21 @@ function toggleVibration(e) {
     localStorage.setItem('dunkRise_vibration', isChecked);
 }
 
+function toggleSound(e) {
+    const isChecked = e.target.checked;
+    GameSettings.sound = isChecked;
+    localStorage.setItem('dunkRise_sound', isChecked);
+    
+    // Если звук включили, можно проиграть короткий "бип" для подтверждения
+    if (isChecked) playSound('rim', 0.5);
+}
+
+
 // --- LOGIC: Game Over Flow ---
 
 function onDeath(finalScore) {
+    playSound('over', 0.8); // <--- ЗВУК ПРОИГРЫША
+    
     if (!hasUsedRevive) {
         triggerSecondChance();
     } else {
@@ -213,6 +237,7 @@ addInteractionListener(shopButton, openShop);
 // Settings
 addInteractionListener(settingsBackBtn, UI.hideSettings);
 addInteractionListener(vibrationToggle, toggleVibration, 'change');
+addInteractionListener(soundToggle, toggleSound, 'change'); 
 
 // Shop
 addInteractionListener(shopBackBtn, closeShop);
@@ -257,6 +282,9 @@ function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     loadSettings();
+    
+    initAudio(); // <--- ИНИЦИАЛИЗАЦИЯ АУДИО (Загрузка файлов)
+    
     resize();
     UI.showMainMenu();
     lastTime = performance.now();
