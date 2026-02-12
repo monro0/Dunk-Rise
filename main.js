@@ -5,7 +5,7 @@ import * as GameUpdate from './game-update.js';
 import * as GameDraw from './game-draw.js';
 import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
-import { initAudio, playSound } from './audio.js'; // <--- ИМПОРТ ЗВУКА
+import { initAudio, playSound } from './audio.js';
 
 let lastTime = 0;
 let hasUsedRevive = false;
@@ -31,7 +31,7 @@ const topRestartBtn = document.getElementById('topRestartBtn');
 // Настройки
 const settingsBackBtn = document.getElementById('settingsBackBtn');
 const vibrationToggle = document.getElementById('vibrationToggle');
-const soundToggle = document.getElementById('soundToggle');
+const soundToggle = document.getElementById('soundToggle'); // <--- НОВАЯ КНОПКА
 
 // Магазин
 const shopBackBtn = document.getElementById('shopBackBtn');
@@ -70,14 +70,11 @@ function startGame() {
 }
 
 function goToMenu() {
-    // Остановка игры
     gameState = null;
     UI.hideGameOverScreen();
     UI.hideSecondChanceScreen();
     clearInterval(reviveTimerInterval);
     hasUsedRevive = false;
-    
-    // Показать меню
     UI.showMainMenu();
 }
 
@@ -85,9 +82,7 @@ function goToMenu() {
 
 function openShop() {
     const activeSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
-    
     UI.showShop(activeSkin, (newSkinId) => {
-        // Callback при выборе скина
         localStorage.setItem('dunkRise_activeSkin', newSkinId);
     });
 }
@@ -96,10 +91,10 @@ function closeShop() {
     UI.hideShop();
 }
 
-// --- LOGIC: Settings ---
+// --- LOGIC: Settings (Sound & Vibration) ---
 
 function loadSettings() {
-    // Вибрация
+    // 1. Вибрация
     const savedVib = localStorage.getItem('dunkRise_vibration');
     if (savedVib !== null) {
         GameSettings.vibration = (savedVib === 'true');
@@ -107,38 +102,46 @@ function loadSettings() {
         GameSettings.vibration = true; 
     }
 
-    // Звук (НОВОЕ)
+    // 2. Звук
     const savedSound = localStorage.getItem('dunkRise_sound');
     if (savedSound !== null) {
         GameSettings.sound = (savedSound === 'true');
     } else {
-        GameSettings.sound = true;
+        GameSettings.sound = true; 
     }
 
     UI.syncSettingsUI(GameSettings);
 }
 
 function toggleVibration(e) {
-    const isChecked = e.target.checked;
+    // Получаем состояние из чекбокса (e.target может быть undefined при ручном вызове, берем сам элемент)
+    const checkbox = e.target || vibrationToggle;
+    const isChecked = checkbox.checked;
+    
     GameSettings.vibration = isChecked;
     localStorage.setItem('dunkRise_vibration', isChecked);
+    
+    // Тестовая вибрация при включении
+    if (isChecked && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
 }
 
 function toggleSound(e) {
-    const isChecked = e.target.checked;
+    const checkbox = e.target || soundToggle;
+    const isChecked = checkbox.checked;
+    
     GameSettings.sound = isChecked;
     localStorage.setItem('dunkRise_sound', isChecked);
     
-    // Если звук включили, можно проиграть короткий "бип" для подтверждения
+    // Тестовый звук при включении
     if (isChecked) playSound('rim', 0.5);
 }
-
 
 // --- LOGIC: Game Over Flow ---
 
 function onDeath(finalScore) {
-    playSound('over', 0.8); // <--- ЗВУК ПРОИГРЫША
-    
+    playSound('over', 0.8);
     if (!hasUsedRevive) {
         triggerSecondChance();
     } else {
@@ -149,7 +152,6 @@ function onDeath(finalScore) {
 function triggerSecondChance() {
     let timeLeft = 5;
     UI.showSecondChanceScreen(timeLeft);
-    
     reviveTimerInterval = setInterval(() => {
         timeLeft--;
         UI.updateSecondChanceTimer(timeLeft);
@@ -188,7 +190,6 @@ function performFullRestart() {
     UI.hideSecondChanceScreen();
     hasUsedRevive = false;
     clearInterval(reviveTimerInterval);
-    
     gameState = GameState.createInitialState(container.clientWidth, container.clientHeight);
     UI.updateScoreUI(0);
 }
@@ -212,21 +213,17 @@ const logicCallbacks = {
     }
 };
 
-// --- EVENTS ---
-function addInteractionListener(element, callback, eventName = 'click') {
+// --- EVENTS (Button Wrappers) ---
+function addInteractionListener(element, callback) {
     if (!element) return;
-    if (eventName === 'change') {
-        element.addEventListener('change', callback);
-    } else {
-        element.addEventListener('click', callback);
-        element.addEventListener('touchend', (e) => {
-            if (element.tagName !== 'INPUT' && !element.disabled) {
-                e.preventDefault(); 
-                e.stopPropagation(); 
-                callback();
-            }
-        }, { passive: false });
-    }
+    element.addEventListener('click', callback);
+    element.addEventListener('touchend', (e) => {
+        if (element.tagName !== 'INPUT' && !element.disabled) {
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            callback();
+        }
+    }, { passive: false });
 }
 
 // Main Menu
@@ -234,15 +231,8 @@ addInteractionListener(playButton, startGame);
 addInteractionListener(settingsButton, UI.showSettings);
 addInteractionListener(shopButton, openShop);
 
-// Settings
-addInteractionListener(settingsBackBtn, UI.hideSettings);
-addInteractionListener(vibrationToggle, toggleVibration, 'change');
-addInteractionListener(soundToggle, toggleSound, 'change'); 
-
-// Shop
+// Shop & HUD
 addInteractionListener(shopBackBtn, closeShop);
-
-// Game HUD
 addInteractionListener(homeBtn, goToMenu);
 addInteractionListener(topRestartBtn, performFullRestart);
 
@@ -251,6 +241,30 @@ addInteractionListener(restartButton, performFullRestart);
 addInteractionListener(goHomeButton, goToMenu);
 addInteractionListener(adButton, performRevive);
 addInteractionListener(closeSecondChanceBtn, performCloseSecondChance);
+
+// --- SETTINGS EVENTS (INSTANT TOGGLE FIX) ---
+// Кнопка назад работает стандартно
+addInteractionListener(settingsBackBtn, UI.hideSettings);
+
+// Тумблер Вибрации (Без задержек)
+if (vibrationToggle) {
+    vibrationToggle.addEventListener('click', toggleVibration); // Для ПК
+    vibrationToggle.addEventListener('touchend', (e) => {
+        e.preventDefault(); // Отменяем ожидание дабл-тапа и зум
+        vibrationToggle.checked = !vibrationToggle.checked; // Меняем галочку вручную
+        toggleVibration({ target: vibrationToggle }); // Вызываем логику
+    }, { passive: false });
+}
+
+// Тумблер Звука (Без задержек)
+if (soundToggle) {
+    soundToggle.addEventListener('click', toggleSound); // Для ПК
+    soundToggle.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        soundToggle.checked = !soundToggle.checked;
+        toggleSound({ target: soundToggle });
+    }, { passive: false });
+}
 
 
 // --- INPUT HANDLING ---
@@ -264,6 +278,8 @@ function getPos(e) {
 canvas.addEventListener('mousedown', (e) => { if(gameState) GameInput.handleStartDrag(getPos(e), gameState); });
 window.addEventListener('mousemove', (e) => { if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
 window.addEventListener('mouseup', () => { if(gameState) GameInput.handleEndDrag(gameState); });
+
+// Touch Events (Passive: false для предотвращения скролла игры)
 canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState) GameInput.handleStartDrag(getPos(e), gameState); }, {passive: false});
 window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); }, {passive: false});
 window.addEventListener('touchend', (e) => { e.preventDefault(); if(gameState) GameInput.handleEndDrag(gameState); }, {passive: false});
@@ -282,9 +298,7 @@ function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     loadSettings();
-    
-    initAudio(); // <--- ИНИЦИАЛИЗАЦИЯ АУДИО (Загрузка файлов)
-    
+    initAudio(); // Загрузка звуков
     resize();
     UI.showMainMenu();
     lastTime = performance.now();
