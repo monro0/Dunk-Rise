@@ -8,7 +8,8 @@ const sounds = {
     bounce: 'assets/bounce.mp3',
     rim: 'assets/rim.mp3',
     net: 'assets/net.mp3',
-    over: 'assets/over.mp3'
+    over: 'assets/over.mp3',
+    throw: 'assets/throw.mp3'
 };
 
 export async function initAudio() {
