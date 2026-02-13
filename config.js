@@ -29,9 +29,9 @@ export const SKINS = [
 ];
 
 // Физика
-export const GRAVITY = 1.1;        // Высокая гравитация для крутых дуг
-export const DRAG_POWER = 0.30;     // Мощный бросок, чтобы компенсировать тяжесть
-export const MAX_PULL_DISTANCE = 140; // Короткий ход "резинки" (было 200). Это важно! 
+export const GRAVITY = 0.75;        // Высокая гравитация для крутых дуг
+export const DRAG_POWER = 0.20;     // Мощный бросок, чтобы компенсировать тяжесть
+export const MAX_PULL_DISTANCE = 150; // Короткий ход "резинки" (было 200). Это важно! 
 
 // Типы
 export const HOOP_TYPE = {
@@ -56,7 +56,7 @@ export let HOOP_MARGIN;
 export function initializeConfig(canvas) {
     // Чуть увеличим кольца для комфортной игры с тяжелым мячом
     BALL_RADIUS = 22;
-    HOOP_RADIUS = 48; // Было 46. Дадим чуть больше места ошибке.
+    HOOP_RADIUS = 42; // Было 46. Дадим чуть больше места ошибке.
     HOOP_DIAMETER = HOOP_RADIUS * 2;
-    HOOP_MARGIN = 50;
+    HOOP_MARGIN = 45;
 }

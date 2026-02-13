@@ -7,6 +7,25 @@ import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
 import { initAudio, playSound } from './audio.js';
 
+// --- TELEGRAM BRIDGE (FIX FOR UPLOAD ERRORS) ---
+// Безопасная обертка, чтобы скрыть прямые вызовы window.Telegram
+const tg = (() => {
+    const app = (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) 
+        ? window.Telegram.WebApp 
+        : null;
+
+    return {
+        haptic: (style = 'light') => {
+            // Проверяем наличие API перед вызовом
+            if (app && app.HapticFeedback) {
+                app.HapticFeedback.impactOccurred(style);
+            }
+        }
+    };
+})();
+
+// --- VARIABLES ---
+
 let lastTime = 0;
 let hasUsedRevive = false;
 let reviveTimerInterval = null;
@@ -34,26 +53,26 @@ const goHomeButton = document.getElementById('goHomeButton');
 const adButton = document.getElementById('adButton');
 const closeSecondChanceBtn = document.getElementById('closeSecondChance');
 
+// --- LOGIC: Resize & Flow ---
+
 function resize() {
     const dpr = window.devicePixelRatio || 1;
     const width = container.clientWidth;
     const height = container.clientHeight;
-    
+
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    
+
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    
+
     if (gameState) {
         gameState.width = width;
         gameState.height = height;
     }
 }
-
-// --- LOGIC: Game Flow ---
 
 function startGame() {
     UI.hideMainMenu();
@@ -100,17 +119,17 @@ function loadSettings() {
 function updateVibrationState(isChecked) {
     GameSettings.vibration = isChecked;
     localStorage.setItem('dunkRise_vibration', isChecked);
-    
-    // Тест вибрации
-    if (isChecked && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+
+    // Тест вибрации (Safe Call)
+    if (isChecked) {
+        tg.haptic('light');
     }
 }
 
 function updateSoundState(isChecked) {
     GameSettings.sound = isChecked;
     localStorage.setItem('dunkRise_sound', isChecked);
-    
+
     // Тест звука
     if (isChecked) playSound('rim', 0.5);
 }
@@ -184,9 +203,8 @@ const logicCallbacks = {
     onDeath: onDeath,
     onHaptic: (style) => {
         if (!GameSettings.vibration) return;
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
-        }
+        // Safe Call через наш мост
+        tg.haptic(style);
     }
 };
 
@@ -199,8 +217,8 @@ function addInteractionListener(element, callback) {
     element.addEventListener('touchend', (e) => {
         // Игнорируем input внутри label, чтобы не ломать чекбоксы
         if (element.tagName !== 'INPUT' && !element.disabled) {
-            e.preventDefault(); 
-            e.stopPropagation(); 
+            e.preventDefault();
+            e.stopPropagation();
             callback();
         }
     }, { passive: false });
@@ -219,48 +237,34 @@ addInteractionListener(closeSecondChanceBtn, performCloseSecondChance);
 addInteractionListener(settingsBackBtn, UI.hideSettings);
 
 // 2. БЫСТРЫЕ ПЕРЕКЛЮЧАТЕЛИ (FIX DELAY)
-// Эта функция вешает обработчик на весь LABEL, чтобы клик срабатывал мгновенно
 function setupFastToggle(inputId, onChangeCallback) {
     const input = document.getElementById(inputId);
     if (!input) return;
-    
-    // Находим родительский label (вся кнопка)
+
     const label = input.closest('label');
 
-    // Логика переключения
     const toggle = () => {
         const newState = input.checked;
         onChangeCallback(newState);
     };
 
-    // Стандартное поведение (для ПК)
     input.addEventListener('change', toggle);
 
-    // Мгновенное нажатие (для Телефонов)
     if (label) {
         label.addEventListener('touchend', (e) => {
-            // Отменяем стандартное поведение (которое ждет 300мс)
             if (e.cancelable) e.preventDefault();
-            
-            // Вручную меняем состояние галочки
             input.checked = !input.checked;
-            
-            // Запускаем логику
             toggle();
         }, { passive: false });
-        
-        // Предотвращаем двойное срабатывание от клика
+
         label.addEventListener('click', (e) => {
-            // Если событие пришло от мыши - ок, если от тача - мы его уже обработали
-            // e.preventDefault() в touchend обычно достаточно
+           // e.preventDefault() // Оставляем стандартное поведение для мыши
         });
     }
 }
 
-// Подключаем наши тумблеры через быструю функцию
 setupFastToggle('vibrationToggle', updateVibrationState);
 setupFastToggle('soundToggle', updateSoundState);
-
 
 // --- INPUT HANDLING ---
 function getPos(e) {
@@ -273,8 +277,8 @@ function getPos(e) {
 canvas.addEventListener('mousedown', (e) => { if(gameState) GameInput.handleStartDrag(getPos(e), gameState); });
 window.addEventListener('mousemove', (e) => { if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
 window.addEventListener('mouseup', () => { if(gameState) GameInput.handleEndDrag(gameState); });
-canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState) GameInput.handleStartDrag(getPos(e), gameState); }, {passive: false});
-window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); }, {passive: false});
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState) GameInput.handleStartDrag(getPos(e), gameState); });
+window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
 window.addEventListener('touchend', (e) => { e.preventDefault(); if(gameState) GameInput.handleEndDrag(gameState); }, {passive: false});
 window.addEventListener('resize', resize);
 
@@ -282,8 +286,10 @@ window.addEventListener('resize', resize);
 function loop(timestamp) {
     const dt = (timestamp - lastTime) / 16.67;
     lastTime = timestamp;
+
     if (gameState && !gameState.isGameOver) GameUpdate.updateGame(dt, gameState, logicCallbacks);
     if (gameState) GameDraw.drawGame(ctx, gameState);
+    
     requestAnimationFrame(loop);
 }
 

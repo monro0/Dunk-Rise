@@ -18,6 +18,13 @@ export function drawGame(ctx, state) {
     // 2. СЛОЙ 1: ЗАДНИЕ ЧАСТИ КОЛЕЦ (Щит, Сетка, Задняя дужка)
     state.hoops.forEach((h, i) => {
         const isNextHoop = (i === state.currentHoopIndex + 1);
+        
+        // --- НОВОЕ: РИСУЕМ РЕЛЬС ДЛЯ ДВИЖУЩИХСЯ КОЛЕЦ ---
+        if (h.type === HOOP_TYPE.MOVING && h.scale > 0.5) {
+            drawHoopRail(ctx, h);
+        }
+        // ------------------------------------------------
+
         drawHoopBackElements(ctx, h, isNextHoop);
     });
 
@@ -37,7 +44,7 @@ export function drawGame(ctx, state) {
         }
     }
 
-        // Aim Line (12 Dots, Cleaner Look)
+    // Aim Line (Линия прицеливания)
     if (state.isDragging && state.ball.isSitting && state.ball.visible) {
         let dx = state.dragStart.x - state.dragCurrent.x;
         let dy = state.dragStart.y - state.dragCurrent.y;
@@ -48,7 +55,6 @@ export function drawGame(ctx, state) {
             dx *= ratio; dy *= ratio;
         }
         
-        // 1. ЦВЕТ ОТ СКИНА
         ctx.fillStyle = state.shop.currentTrailColor || '#FF5722';
         
         let sx = state.ball.x;
@@ -56,26 +62,24 @@ export function drawGame(ctx, state) {
         let svx = dx * DRAG_POWER;
         let svy = dy * DRAG_POWER;
         
-        // 2. 12 ТОЧЕК
-        for(let i=0; i<12; i++) {
-            // Увеличили шаг симуляции с 2 до 3.
-            // Это делает расстояние между точками больше,
-            // чтобы линия оставалась достаточно длинной при меньшем числе точек.
-            sx += svx * 3;
-            sy += svy * 3;
-            svy += GRAVITY * 3;
+        // 2. 10 ТОЧЕК (Компактный прицел)
+        for(let i=0; i<10; i++) {
+            // Уменьшили шаг с 4.5 до 3.5 (точки плотнее)
+            // Уменьшили кол-во точек с 12 до 10 (линия короче)
+            sx += svx * 3.5;
+            sy += svy * 3.5;
+            svy += GRAVITY * 3.5;
 
             if (sx < BALL_RADIUS) { sx = BALL_RADIUS; svx = -svx * 0.6; } 
             else if (sx > state.width - BALL_RADIUS) { sx = state.width - BALL_RADIUS; svx = -svx * 0.6; }
 
             ctx.beginPath();
-            ctx.arc(sx, sy, 3, 0, Math.PI*2); // Размер точки 3px
+            // Размер точки чуть меньше (2.5px вместо 3) для аккуратности
+            ctx.arc(sx, sy, 2.5, 0, Math.PI*2); 
             ctx.fill();
         }
+
     }
-
-
-
 
     // Сам Мяч
     if (state.ball.visible) {
@@ -83,7 +87,6 @@ export function drawGame(ctx, state) {
     }
 
     // 4. СЛОЙ 3: ПЕРЕДНИЕ ЧАСТИ КОЛЕЦ (Передняя дужка)
-    // Это создает иллюзию того, что мяч внутри
     state.hoops.forEach((h, i) => {
         const isNextHoop = (i === state.currentHoopIndex + 1);
         drawHoopFrontElements(ctx, h, isNextHoop);
@@ -143,151 +146,100 @@ function hexToRgba(hex, alpha) {
     return `rgba(255,87,34, ${alpha})`;
 }
 
-// --- PROCEDURAL SKINS IMPLEMENTATION ---
+// --- HELPER: Draw Rail for Moving Hoops ---
+function drawHoopRail(ctx, h) {
+    ctx.save();
+    // Рисуем линию на 60px ниже центра кольца
+    const railY = h.y + 60; 
+    
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Полупрозрачный белый
+    ctx.lineWidth = 4;
+    ctx.setLineDash([8, 10]); // Пунктир
+    ctx.lineCap = 'round';
+    
+    // Рисуем от minX до maxX
+    // (Эти свойства должны быть заданы в game-state.js при спавне)
+    if (h.minX !== undefined && h.maxX !== undefined) {
+        ctx.moveTo(h.minX, railY);
+        ctx.lineTo(h.maxX, railY);
+    }
+    ctx.stroke();
+
+    // Рисуем "стопперы" по краям
+    ctx.setLineDash([]); 
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    
+    if (h.minX !== undefined) {
+        ctx.beginPath(); ctx.arc(h.minX, railY, 4, 0, Math.PI*2); ctx.fill();
+    }
+    if (h.maxX !== undefined) {
+        ctx.beginPath(); ctx.arc(h.maxX, railY, 4, 0, Math.PI*2); ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+// --- PROCEDURAL SKINS ---
 
 function drawBasketball(ctx, r) {
-    // Gradient Base
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
     gradient.addColorStop(0, '#FFB74D'); 
     gradient.addColorStop(1, '#FF9800'); 
-    
-    ctx.beginPath(); 
-    ctx.arc(0, 0, r, 0, Math.PI * 2); 
-    ctx.fillStyle = gradient; 
-    ctx.fill();
-
-    // Black Lines
-    ctx.strokeStyle = '#2e1a0f'; 
-    ctx.lineWidth = r * 0.12; // Масштабируемая толщина
-    ctx.lineCap = 'round';
-
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
+    ctx.strokeStyle = '#2e1a0f'; ctx.lineWidth = r * 0.12; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(r * 0.4, 0, 0, r); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-r, 0); ctx.quadraticCurveTo(0, r * 0.4, r, 0); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 0, r * 0.65, r, 0, 0, Math.PI * 2); ctx.stroke();
-
-    // Outline
-    ctx.strokeStyle = '#BF360C'; 
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#BF360C'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawWatermelon(ctx, r) {
-    // 1. Base (Light Green)
     ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = '#90EE90'; // Light Green
-    ctx.fill();
-    ctx.clip(); // Masking for stripes
-
-    // 2. Organic Stripes
-    ctx.fillStyle = '#1B5E20'; // Dark Green
-    
-    // Рисуем несколько полос
-    const numStripes = 5;
-    const stripeWidth = r * 0.4; 
-    const step = (r * 2.5) / numStripes;
-    
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = '#90EE90'; ctx.fill(); ctx.clip();
+    ctx.fillStyle = '#1B5E20'; 
+    const numStripes = 5; const stripeWidth = r * 0.4; const step = (r * 2.5) / numStripes;
     for (let i = 0; i < numStripes; i++) {
         let startX = -r * 1.2 + (step * i);
-        
-        ctx.beginPath();
-        // Начинаем сверху
-        ctx.moveTo(startX, -r);
-        
-        // Рисуем волнистую линию вниз
+        ctx.beginPath(); ctx.moveTo(startX, -r);
         for (let y = -r; y <= r; y += 5) {
-            // Используем синусоиду для органичности
-            // phase shift зависит от i (индекса полосы), чтобы они были разными
             let wobble = Math.sin(y * 0.05 + i) * (r * 0.15); 
-            // Добавляем искажение кривизны сферы (шире в центре)
             let sphereBulge = Math.cos(y / r * 1.5) * (r * 0.1);
-
             ctx.lineTo(startX + wobble + sphereBulge, y);
         }
-        
-        // Замыкаем полосу (идем обратно вверх с отступом ширины)
         for (let y = r; y >= -r; y -= 5) {
             let wobble = Math.sin(y * 0.05 + i) * (r * 0.15);
             let sphereBulge = Math.cos(y / r * 1.5) * (r * 0.1);
             ctx.lineTo(startX + stripeWidth + wobble + sphereBulge, y);
         }
-        
         ctx.fill();
     }
-
-    // 3. Texture dots (optional detail)
-    ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    for(let j=0; j<10; j++) {
-        ctx.beginPath();
-        ctx.arc((Math.random()-0.5)*r*1.5, (Math.random()-0.5)*r*1.5, r*0.05, 0, Math.PI*2);
-        ctx.fill();
-    }
-
     ctx.restore();
-
-    // 4. Outline
-    ctx.strokeStyle = '#1B5E20'; 
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#1B5E20'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawZombie(ctx, r) {
-    // Base Skin (Pale Turquoise)
     const gradient = ctx.createRadialGradient(-r/3, -r/3, r/4, 0, 0, r);
-    gradient.addColorStop(0, '#B2DFDB'); // Lighter
-    gradient.addColorStop(1, '#80CBC4'); // Target Color
-    
+    gradient.addColorStop(0, '#B2DFDB'); gradient.addColorStop(1, '#80CBC4'); 
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
-
-    // Eyes Helper
     function drawStaticEye(cx, cy, radius) {
-        // Sclera
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#00695C'; ctx.lineWidth = 1; ctx.stroke();
-        
-        // Pupil (Fixed direction - looking slightly right)
-        ctx.fillStyle = '#000000';
-        ctx.beginPath(); ctx.arc(cx + radius*0.3, cy, radius * 0.3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(cx + radius*0.3, cy, radius * 0.3, 0, Math.PI*2); ctx.fill();
     }
-
-    // Left Eye (Bigger) - Static Position relative to Radius
     drawStaticEye(-r * 0.35, -r * 0.2, r * 0.32);
-    
-    // Right Eye (Smaller)
     drawStaticEye(r * 0.4, -r * 0.25, r * 0.22);
-
-    // Mouth (Stitched)
     ctx.strokeStyle = '#3E2723'; ctx.lineWidth = r * 0.08; ctx.lineCap = 'round';
-    ctx.beginPath(); 
-    ctx.moveTo(-r * 0.4, r * 0.4);
-    ctx.quadraticCurveTo(0, r * 0.6, r * 0.4, r * 0.35);
-    ctx.stroke();
-    
-    // Stitches
-    ctx.lineWidth = r * 0.05;
-    const stitchY = r * 0.45;
-    const stitchX = [-r * 0.2, 0, r * 0.2];
-    
-    stitchX.forEach(x => {
-        ctx.beginPath(); 
-        ctx.moveTo(x, stitchY - (r*0.1)); 
-        ctx.lineTo(x, stitchY + (r*0.1)); 
-        ctx.stroke();
-    });
-
-    // Scar
+    ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.4); ctx.quadraticCurveTo(0, r * 0.6, r * 0.4, r * 0.35); ctx.stroke();
+    ctx.lineWidth = r * 0.05; const stitchY = r * 0.45; const stitchX = [-r * 0.2, 0, r * 0.2];
+    stitchX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, stitchY - (r*0.1)); ctx.lineTo(x, stitchY + (r*0.1)); ctx.stroke(); });
     ctx.strokeStyle = '#00695C'; ctx.lineWidth = 2;
-    ctx.beginPath(); 
-    ctx.moveTo(-r * 0.6, -r * 0.5); 
-    ctx.lineTo(-r * 0.4, -r * 0.7); 
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.4, -r * 0.7); ctx.stroke();
 }
 
-// --- SPLIT HOOP RENDERING (3D EFFECT) ---
-
-// --- 3D HOOP RENDERING (Clean Shield + Juicy Spikes) ---
+// --- HOOP RENDERING ---
 
 function drawHoopBackElements(ctx, h, isNextHoop) {
     if(h.scale <= 0) return;
@@ -296,33 +248,29 @@ function drawHoopBackElements(ctx, h, isNextHoop) {
     ctx.translate(h.x, h.y);
     ctx.scale(h.scale, h.scale);
 
-    // Цвета обода
-    const rimColorDark = h.type === HOOP_TYPE.SPIKED ? '#37474F' : (isNextHoop ? '#D84315' : '#757575'); 
+    // Цвет задней части обода
+    let rimColorDark;
+    if (h.type === HOOP_TYPE.SPIKED) {
+        rimColorDark = '#37474F';
+    } else if (h.type === HOOP_TYPE.MOVING) {
+        rimColorDark = '#00838F'; // Dark Cyan (Tech style)
+    } else {
+        rimColorDark = isNextHoop ? '#D84315' : '#757575';
+    }
+    
     const rimLineWidth = 8;
 
-    // 1. ЩИТ (Backboard) - "Как было", но без оранжевого
+    // 1. ЩИТ (Backboard)
     if (h.type === HOOP_TYPE.BACKBOARD) {
         ctx.save();
         const boardX = (HOOP_RADIUS + 15) * h.backboardSide;
-        
-        // Рисуем стойку (просто и чисто)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; 
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; 
         ctx.lineWidth = 2;
-        
-        const bw = 12; // Ширина стойки
-        const bh = 85; // Высота
-        
-        // Сама палка
+        const bw = 12; const bh = 85; 
         ctx.fillRect(boardX - (bw/2), -bh - 10, bw, bh); 
         ctx.strokeRect(boardX - (bw/2), -bh - 10, bw, bh);
-        
-        // Крепление к кольцу (диагональная палка)
-        ctx.beginPath(); 
-        ctx.moveTo(HOOP_RADIUS * h.backboardSide * 0.5, 0); 
-        ctx.lineTo(boardX, -25); 
-        ctx.stroke();
-
+        ctx.beginPath(); ctx.moveTo(HOOP_RADIUS * h.backboardSide * 0.5, 0); ctx.lineTo(boardX, -25); ctx.stroke();
         ctx.restore();
     }
 
@@ -330,39 +278,34 @@ function drawHoopBackElements(ctx, h, isNextHoop) {
     ctx.strokeStyle = 'rgba(158, 158, 158, 0.3)'; 
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    
     const topW = HOOP_RADIUS;
     const botW = HOOP_RADIUS * 0.6;
     const netH = 55;
-    
     ctx.beginPath();
     for(let i = 0; i <= 6; i++) {
         let x1 = -topW + (topW * 2 * i / 6);
         let x2 = -botW + (botW * 2 * i / 6);
         ctx.moveTo(x1, 0);
-        ctx.quadraticCurveTo(x1 * 0.9, netH * 0.5, x2, netH); // Легкий изгиб сетки
+        ctx.quadraticCurveTo(x1 * 0.9, netH * 0.5, x2, netH); 
     }
-    ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH); // Низ сетки
+    ctx.moveTo(-botW, netH); ctx.lineTo(botW, netH); 
     ctx.stroke();
 
-    // 3. ЗАДНЯЯ ЧАСТЬ ОБОДА (Back Rim)
-    
-    // Если это ШИПЫ - рисуем задний ряд шипов
+    // 3. ЗАДНЯЯ ЧАСТЬ ОБОДА
     if (h.type === HOOP_TYPE.SPIKED) {
-        drawSpikes(ctx, true); // true = задний слой
+        drawSpikes(ctx, true); 
     }
 
     ctx.strokeStyle = rimColorDark;
     ctx.lineWidth = rimLineWidth;
     ctx.beginPath();
-    // Верхняя дуга эллипса
     ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, Math.PI, Math.PI * 2, false); 
     ctx.stroke();
 
     ctx.restore();
 }
 
-function drawHoopFrontElements(ctx, h, isNextHoop) {
+export function drawHoopFrontElements(ctx, h, isNextHoop) {
     if(h.scale <= 0) return;
     
     ctx.save();
@@ -370,50 +313,52 @@ function drawHoopFrontElements(ctx, h, isNextHoop) {
     ctx.scale(h.scale, h.scale);
 
     let rimColor;
+    // Цвет передней части обода
     if (h.type === HOOP_TYPE.SPIKED) {
-        rimColor = '#546E7A'; // Металлический цвет для шипованного кольца
+        rimColor = '#546E7A'; 
+    } else if (h.type === HOOP_TYPE.MOVING) {
+        rimColor = '#00BCD4'; // Bright Cyan (Tech style)
     } else {
         rimColor = isNextHoop ? '#FF5722' : '#BDBDBD';
     }
     const rimLineWidth = 8;
 
-    // 1. ПЕРЕДНИЕ ШИПЫ (если есть)
-    // Мяч будет рисоваться ПОД ними, так как эта функция вызывается после отрисовки мяча
+    // 1. ПЕРЕДНИЕ ШИПЫ
     if (h.type === HOOP_TYPE.SPIKED) {
-        drawSpikes(ctx, false); // false = передний слой
+        drawSpikes(ctx, false); 
     }
 
-    // 2. ПЕРЕДНЯЯ ЧАСТЬ ОБОДА (Front Rim)
+    // 2. ПЕРЕДНЯЯ ЧАСТЬ ОБОДА
     ctx.strokeStyle = rimColor;
     ctx.lineWidth = rimLineWidth;
     ctx.beginPath();
-    // Нижняя дуга эллипса
     ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI); 
     ctx.stroke();
+
+    // 3. ДЕТАЛИ ДЛЯ TECH STYLE (Заклепки)
+    if (h.type === HOOP_TYPE.MOVING) {
+        ctx.fillStyle = '#E0F7FA'; // Почти белые заклепки
+        [-0.8, 0, 0.8].forEach(t => {
+            const bx = Math.cos(t) * HOOP_RADIUS;
+            const by = Math.sin(t) * (HOOP_RADIUS * 0.35);
+            ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI*2); ctx.fill();
+        });
+    }
 
     ctx.restore();
 }
 
-// --- НОВАЯ ФУНКЦИЯ ОТРИСОВКИ СОЧНЫХ ШИПОВ ---
 function drawSpikes(ctx, isBackLayer) {
     const spikeCountTotal = 10; 
-    const spikeLen = 16; // Длинные шипы
-    const spikeWidth = 0.25; // Ширина основания в радианах
+    const spikeLen = 16; 
+    const spikeWidth = 0.25; 
 
-    // Цвета шипов
-    const colorFill = isBackLayer ? '#B71C1C' : '#FF5252'; // Темно-красный сзади, ярко-красный спереди
+    const colorFill = isBackLayer ? '#B71C1C' : '#FF5252'; 
     const colorStroke = isBackLayer ? '#212121' : '#B71C1C';
-
-    // Определяем диапазон углов для отрисовки
-    // Back Layer: рисуем сверху (PI .. 2PI)
-    // Front Layer: рисуем снизу (0 .. PI)
-    const startAngle = isBackLayer ? Math.PI : 0;
-    const endAngle = isBackLayer ? Math.PI * 2 : Math.PI;
 
     for(let i = 0; i < spikeCountTotal; i++) {
         const angle = (i / spikeCountTotal) * Math.PI * 2;
         
-        // Проверяем видимость (с небольшим запасом, чтобы не обрезалось резко)
         let isVisible = false;
         if (isBackLayer) {
             if (angle > Math.PI + 0.1 && angle < Math.PI * 2 - 0.1) isVisible = true;
@@ -422,14 +367,10 @@ function drawSpikes(ctx, isBackLayer) {
         }
 
         if (isVisible) {
-            // Координаты основания на эллипсе
             const bx1 = Math.cos(angle - spikeWidth/2) * HOOP_RADIUS;
             const by1 = Math.sin(angle - spikeWidth/2) * (HOOP_RADIUS * 0.35);
-            
             const bx2 = Math.cos(angle + spikeWidth/2) * HOOP_RADIUS;
             const by2 = Math.sin(angle + spikeWidth/2) * (HOOP_RADIUS * 0.35);
-
-            // Координаты острия (торчит наружу)
             const tipX = Math.cos(angle) * (HOOP_RADIUS + spikeLen);
             const tipY = Math.sin(angle) * ((HOOP_RADIUS * 0.35) + spikeLen);
 
@@ -439,7 +380,7 @@ function drawSpikes(ctx, isBackLayer) {
 
             ctx.beginPath();
             ctx.moveTo(bx1, by1);
-            ctx.lineTo(tipX, tipY); // Пик
+            ctx.lineTo(tipX, tipY); 
             ctx.lineTo(bx2, by2);
             ctx.closePath();
             

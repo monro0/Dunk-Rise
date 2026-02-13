@@ -8,17 +8,27 @@ export function updateGame(dt, state, callbacks) {
     // Hoops
     state.hoops.forEach(h => {
         if (h.scale < h.targetScale) h.scale += 0.08 * dt;
+        
         if (h.type === HOOP_TYPE.MOVING) {
             h.x += h.moveSpeed * h.moveDir * dt;
-            const HOOP_MARGIN = 50; 
-            if (h.x > state.width - HOOP_MARGIN) { h.x = state.width - HOOP_MARGIN; h.moveDir = -1; } 
-            else if (h.x < HOOP_MARGIN) { h.x = HOOP_MARGIN; h.moveDir = 1; }
+            
+            // --- НОВАЯ ЛОГИКА: Рельсы ---
+            // Используем сохраненные границы minX и maxX
+            if (h.x > h.maxX) { 
+                h.x = h.maxX; 
+                h.moveDir = -1; 
+            } else if (h.x < h.minX) { 
+                h.x = h.minX; 
+                h.moveDir = 1; 
+            }
+            // -----------------------------
             
             if (state.ball.isSitting && state.hoops[state.currentHoopIndex] === h) { 
                 state.ball.x = h.x; 
             }
         }
     });
+
 
     // Wind
     if (state.currentObstacle && state.currentObstacle.type === OBSTACLE_TYPE.WIND) {
