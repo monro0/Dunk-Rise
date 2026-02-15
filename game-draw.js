@@ -389,3 +389,4 @@ function drawSpikes(ctx, isBackLayer) {
         }
     }
 }
+

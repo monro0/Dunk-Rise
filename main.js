@@ -200,6 +200,10 @@ const logicCallbacks = {
             UI.updateHighScoreUI(newScore);
         }
     },
+    onBallFellBack: () => {
+    // Проигрываем тихий звук, чтобы дать понять, что произошло
+    playSound('bounce', 0.5, 0.3); // (громкость, разброс высоты тона)
+    },
     onDeath: onDeath,
     onHaptic: (style) => {
         if (!GameSettings.vibration) return;
@@ -281,6 +285,10 @@ canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState)
 window.addEventListener('touchmove', (e) => { e.preventDefault(); if(gameState) GameInput.handleMoveDrag(getPos(e), gameState); });
 window.addEventListener('touchend', (e) => { e.preventDefault(); if(gameState) GameInput.handleEndDrag(gameState); }, {passive: false});
 window.addEventListener('resize', resize);
+// ОТКЛЮЧАЕМ КОНТЕКСТНОЕ МЕНЮ (ДОБАВЬ ЭТОТ КОД)
+window.addEventListener('contextmenu', e => {
+    e.preventDefault();
+});
 
 // --- INIT ---
 function loop(timestamp) {
