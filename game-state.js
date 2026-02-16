@@ -2,9 +2,48 @@ import { HOOP_TYPE, OBSTACLE_TYPE, BALL_RADIUS, HOOP_RADIUS, HOOP_DIAMETER, HOOP
 
 // --- FACTORY ---
 
+const BASE_UNLOCKED_SKINS = ['basketball', 'watermelon', 'zombie'];
+
+function loadStars() {
+    const raw = localStorage.getItem('dunkRise_stars');
+    if (raw === null) return 0;
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? 0 : Math.max(0, n);
+}
+
+function loadUnlockedSkins() {
+    try {
+        const raw = localStorage.getItem('dunkRise_unlockedSkins');
+        if (!raw) return [...BASE_UNLOCKED_SKINS];
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return [...BASE_UNLOCKED_SKINS];
+        return [...new Set([...BASE_UNLOCKED_SKINS, ...arr])];
+    } catch (_) {
+        return [...BASE_UNLOCKED_SKINS];
+    }
+}
+
+export function createMenuState() {
+    const stars = loadStars();
+    const unlockedSkins = loadUnlockedSkins();
+    const savedSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
+    const activeSkin = unlockedSkins.includes(savedSkin) ? savedSkin : 'basketball';
+    const skinConfig = SKINS.find(s => s.id === activeSkin) || SKINS[0];
+    return {
+        stars,
+        shop: {
+            activeSkin,
+            currentTrailColor: skinConfig.trailColor,
+            unlockedSkins
+        }
+    };
+}
+
 export function createInitialState(width, height) {
     const savedSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
-    const skinConfig = SKINS.find(s => s.id === savedSkin) || SKINS[0];
+    const unlockedSkins = loadUnlockedSkins();
+    const activeSkin = unlockedSkins.includes(savedSkin) ? savedSkin : 'basketball';
+    const skinConfig = SKINS.find(s => s.id === activeSkin) || SKINS[0];
 
     const state = {
         width: width,
@@ -15,11 +54,12 @@ export function createInitialState(width, height) {
         shotTouchedRim: false,
         cameraY: 0,
         cameraTargetY: 0,
-        
+        stars: loadStars(),
+
         shop: {
-            activeSkin: savedSkin,
+            activeSkin,
             currentTrailColor: skinConfig.trailColor,
-            unlockedSkins: ['basketball', 'watermelon', 'zombie']
+            unlockedSkins
         },
 
         ball: { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true },
@@ -44,12 +84,34 @@ export function createInitialState(width, height) {
 }
 
 export function setActiveSkin(state, skinId) {
+    if (!state.shop.unlockedSkins.includes(skinId)) return;
     const skinConfig = SKINS.find(s => s.id === skinId);
     if (skinConfig) {
         state.shop.activeSkin = skinId;
         state.shop.currentTrailColor = skinConfig.trailColor;
         localStorage.setItem('dunkRise_activeSkin', skinId);
     }
+}
+
+export function addStars(state, amount) {
+    if (amount <= 0) return;
+    state.stars = (state.stars || 0) + amount;
+    localStorage.setItem('dunkRise_stars', String(state.stars));
+}
+
+export function spendStars(state, amount) {
+    if (amount <= 0) return true;
+    const current = state.stars || 0;
+    if (current < amount) return false;
+    state.stars = current - amount;
+    localStorage.setItem('dunkRise_stars', String(state.stars));
+    return true;
+}
+
+export function unlockSkin(state, skinId) {
+    if (state.shop.unlockedSkins.includes(skinId)) return;
+    state.shop.unlockedSkins.push(skinId);
+    localStorage.setItem('dunkRise_unlockedSkins', JSON.stringify(state.shop.unlockedSkins));
 }
 
 export function reviveGameLogic(state) {
@@ -132,12 +194,15 @@ export function spawnNewHoop(state, prevHoop = null) {
         if (newX < centerX) { if (moveMaxX > centerX - 20) moveMaxX = centerX - 20; }
         else { if (moveMinX < centerX + 20) moveMinX = centerX + 20; }
         
+        const hasStar = Math.random() < 0.2;
         state.hoops.push({
             x: newX, y: newY, type: type, backboardSide: 0,
             scale: 0, targetScale: 1, 
             moveSpeed: 1.0, moveDir: Math.random() > 0.5 ? 1 : -1, 
             minX: moveMinX, maxX: moveMaxX,
-            isConquered: false
+            isConquered: false,
+            hasStar,
+            starY: newY - 70
         });
         return; 
     }
@@ -161,8 +226,9 @@ export function spawnNewHoop(state, prevHoop = null) {
         }
     }
 
-    addHoop(state, newX, newY, type, backboardSide);
-    
+    const hasStar = Math.random() < 0.2;
+    addHoop(state, newX, newY, type, backboardSide, hasStar);
+
     // --- 5. ВЕТЕР (ИСПРАВЛЕНО: Чаще и раньше) ---
     state.currentObstacle = null;
     // Снизили порог очков с 20 до 12. Повысили шанс с 0.2 до 0.3.
@@ -188,10 +254,13 @@ export function spawnNewHoop(state, prevHoop = null) {
 }
 
 
-function addHoop(state, x, y, type = HOOP_TYPE.NORMAL, backboardSide = 0) {
+function addHoop(state, x, y, type = HOOP_TYPE.NORMAL, backboardSide = 0, hasStar = false) {
+    const starY = y - 70;
     state.hoops.push({
         x: x, y: y, type: type, backboardSide: backboardSide,
         scale: 0, targetScale: 1, moveSpeed: 1.5,
-        moveDir: Math.random() > 0.5 ? 1 : -1, isConquered: false
+        moveDir: Math.random() > 0.5 ? 1 : -1, isConquered: false,
+        hasStar: !!hasStar,
+        starY
     });
 }

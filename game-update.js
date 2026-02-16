@@ -1,5 +1,5 @@
 import { GRAVITY, BALL_RADIUS, HOOP_RADIUS, HOOP_TYPE, OBSTACLE_TYPE } from './config.js';
-import { spawnNewHoop, resetBallToHoop } from './game-state.js';
+import { spawnNewHoop, resetBallToHoop, addStars } from './game-state.js';
 import { playSound } from './audio.js';
 
 export function updateGame(dt, state, callbacks) {
@@ -202,7 +202,15 @@ function handleScore(targetHoop, state, callbacks) {
     state.score += pointsToAdd;
     callbacks.onScore(state.score);
     createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, !state.shotTouchedRim ? pointsToAdd : 0);
-    
+
+    if (targetHoop.hasStar) {
+        addStars(state, 1);
+        createFloatingText(state, state.ball.x, state.ball.y - 70, '+1 ⭐', 0);
+        createParticles(state, state.ball.x, state.ball.y, 15, '#FFD700');
+        targetHoop.hasStar = false;
+        if (callbacks && callbacks.onStarCollected) callbacks.onStarCollected(state.stars);
+    }
+
     const particleColor = state.shop.currentTrailColor || '#FF5722';
     createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
     

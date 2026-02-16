@@ -25,7 +25,16 @@ export const SKINS = [
         name: 'Зомби', 
         price: 0, 
         trailColor: '#80CBC4' // Бирюзовый (под цвет скина)
-    }
+    },
+    { 
+        id: 'cosmic', 
+        name: 'Космос', 
+        price: 1, 
+        trailColor: '#673AB7' 
+    },
+    { id: 'neon', name: 'Неон', price: 10, trailColor: '#00FFFF' },
+    { id: 'galaxy', name: 'Галактика', price: 20, trailColor: '#AA00FF' },
+    { id: 'golden', name: 'Золотой', price: 50, trailColor: '#FFD700' }
 ];
 
 // Физика

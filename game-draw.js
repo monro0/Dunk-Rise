@@ -15,17 +15,19 @@ export function drawGame(ctx, state) {
         });
     }
 
-    // 2. СЛОЙ 1: ЗАДНИЕ ЧАСТИ КОЛЕЦ (Щит, Сетка, Задняя дужка)
+    // 2. СЛОЙ 1: ЗАДНИЕ ЧАСТИ КОЛЕЦ (Щит, Сетка, Задняя дужка) + звёзды над кольцами
     state.hoops.forEach((h, i) => {
         const isNextHoop = (i === state.currentHoopIndex + 1);
         
-        // --- НОВОЕ: РИСУЕМ РЕЛЬС ДЛЯ ДВИЖУЩИХСЯ КОЛЕЦ ---
         if (h.type === HOOP_TYPE.MOVING && h.scale > 0.5) {
             drawHoopRail(ctx, h);
         }
-        // ------------------------------------------------
 
         drawHoopBackElements(ctx, h, isNextHoop);
+
+        if (h.hasStar && h.scale > 0.3) {
+            drawStarAboveHoop(ctx, h);
+        }
     });
 
     // 3. СЛОЙ 2: МЯЧ И ШЛЕЙФ
@@ -123,6 +125,18 @@ export function drawSkin(ctx, x, y, r, angle, skinId) {
             break;
         case 'zombie':
             drawZombie(ctx, r);
+            break;
+        case 'cosmic':
+            drawCosmic(ctx, r);
+            break;
+        case 'neon':
+            drawNeon(ctx, r);
+            break;
+        case 'galaxy':
+            drawGalaxy(ctx, r);
+            break;
+        case 'golden':
+            drawGolden(ctx, r);
             break;
         case 'basketball':
         default:
@@ -237,6 +251,92 @@ function drawZombie(ctx, r) {
     stitchX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, stitchY - (r*0.1)); ctx.lineTo(x, stitchY + (r*0.1)); ctx.stroke(); });
     ctx.strokeStyle = '#00695C'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.4, -r * 0.7); ctx.stroke();
+}
+
+function drawCosmic(ctx, r) {
+    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
+    gradient.addColorStop(0, '#9C27B0');
+    gradient.addColorStop(0.6, '#673AB7');
+    gradient.addColorStop(1, '#3F51B5');
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+function drawNeon(ctx, r) {
+    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
+    gradient.addColorStop(0, '#E0F7FA');
+    gradient.addColorStop(0.5, '#00FFFF');
+    gradient.addColorStop(1, '#0097A7');
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+function drawGalaxy(ctx, r) {
+    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
+    gradient.addColorStop(0, '#E1BEE7');
+    gradient.addColorStop(0.4, '#AA00FF');
+    gradient.addColorStop(1, '#4A148C');
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(170, 0, 255, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+function drawGolden(ctx, r) {
+    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
+    gradient.addColorStop(0, '#FFF8E1');
+    gradient.addColorStop(0.5, '#FFD700');
+    gradient.addColorStop(1, '#FF8F00');
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+// --- STAR ABOVE HOOP ---
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+    let rot = Math.PI / 2;
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+        const radius = i % 2 === 0 ? outerR : innerR;
+        const x = cx + Math.cos(rot) * radius;
+        const y = cy + Math.sin(rot) * radius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        rot += Math.PI / spikes;
+    }
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawStarAboveHoop(ctx, h) {
+    const starY = h.y - 70;
+    ctx.save();
+    ctx.translate(h.x, starY);
+    const pulse = 1 + 0.12 * Math.sin(Date.now() * 0.005);
+    ctx.scale(pulse, pulse);
+    ctx.fillStyle = '#FFD700';
+    ctx.shadowColor = '#FFA500';
+    ctx.shadowBlur = 15;
+    drawStar(ctx, 0, 0, 5, 15, 7);
+    ctx.shadowBlur = 0;
+    ctx.restore();
 }
 
 // --- HOOP RENDERING ---

@@ -161,6 +161,20 @@ canvas {
     stroke: #FFD700;
 }
 
+.menu-stars {
+    color: #FFD700;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    gap: 6px;
+}
+
+.menu-stars span:last-child {
+    font-weight: bold;
+}
+
 /* --- SETTINGS & SHOP SCREENS --- */
 
 #settings-screen, #shop-screen {
@@ -183,6 +197,17 @@ canvas {
     font-size: 2.5rem;
     margin-bottom: 20px;
     text-transform: uppercase;
+}
+
+.shop-stars {
+    color: #FFD700;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 /* --- SHOP GRID --- */
@@ -229,6 +254,23 @@ canvas {
     border-color: #FF9800;
     background: rgba(255, 152, 0, 0.1);
     box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+}
+
+.shop-card--locked {
+    opacity: 0.9;
+}
+
+.shop-card-price {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.shop-card-owned {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #4CAF50;
 }
 
 .shop-card-title {
@@ -325,6 +367,21 @@ input:checked + .slider:before { transform: translateX(26px); }
     color: white;
     text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     opacity: 0.9;
+}
+
+#stars-container {
+    position: absolute;
+    top: 25px;
+    right: 75px;
+    color: #FFD700;
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0.95;
+    gap: 6px;
 }
 
 #high-score-container {

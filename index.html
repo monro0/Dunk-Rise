@@ -27,6 +27,9 @@
                     </svg>
                     <span>BEST: <span id="menu-high-score">0</span></span>
                 </div>
+                <div class="menu-stars">
+                    <span aria-hidden="true">⭐</span> <span id="menu-stars">0</span>
+                </div>
 
                 <button id="playButton" class="btn-primary">ИГРАТЬ</button>
                 <button id="shopButton" class="btn-primary">МАГАЗИН</button>
@@ -37,6 +40,9 @@
         <!-- ЭКРАН МАГАЗИНА -->
         <div id="shop-screen" class="hidden">
             <h2>МАГАЗИН</h2>
+            <div class="shop-stars">
+                <span aria-hidden="true">⭐</span> <span id="shop-stars">0</span>
+            </div>
             <div class="shop-grid">
                 <!-- Карточки генерируются в UI.js -->
             </div>
@@ -74,6 +80,10 @@
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
             </button>
+
+            <div id="stars-container">
+                <span aria-hidden="true">⭐</span> <span id="stars-value">0</span>
+            </div>
 
             <div id="high-score-container">
                 <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -123,8 +133,7 @@
             </div>
         </div>
     </div>
-    <!-- YANDEX GAMES SDK (ДОБАВЬ ЭТУ СТРОКУ) -->
-    <script src="https://yandex.ru/games/sdk/v2"></script>
+
     <script type="module" src="main.js"></script>
 </body>
 </html>
