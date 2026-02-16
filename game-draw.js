@@ -311,22 +311,26 @@ function drawGolden(ctx, r) {
 
 // --- STAR ABOVE HOOP ---
 function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
-    let rot = Math.PI / 2;
+    let rot = Math.PI / 2 * 3; // начинаем с верхней точки (270°)
+    let step = Math.PI / spikes;
     ctx.beginPath();
-    for (let i = 0; i < spikes * 2; i++) {
-        const radius = i % 2 === 0 ? outerR : innerR;
-        const x = cx + Math.cos(rot) * radius;
-        const y = cy + Math.sin(rot) * radius;
+    for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * outerR;
+        let y = cy + Math.sin(rot) * outerR;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-        rot += Math.PI / spikes;
+        rot += step;
+        x = cx + Math.cos(rot) * innerR;
+        y = cy + Math.sin(rot) * innerR;
+        ctx.lineTo(x, y);
+        rot += step;
     }
     ctx.closePath();
     ctx.fill();
 }
 
 function drawStarAboveHoop(ctx, h) {
-    const starY = h.y - 70;
+    const starY = h.y - 70 + (h.starOffsetY || 0);
     ctx.save();
     ctx.translate(h.x, starY);
     const pulse = 1 + 0.12 * Math.sin(Date.now() * 0.005);

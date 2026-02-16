@@ -194,7 +194,7 @@ export function spawnNewHoop(state, prevHoop = null) {
         if (newX < centerX) { if (moveMaxX > centerX - 20) moveMaxX = centerX - 20; }
         else { if (moveMinX < centerX + 20) moveMinX = centerX + 20; }
         
-        const hasStar = Math.random() < 0.2;
+        const hasStar = Math.random() < 0.4;
         state.hoops.push({
             x: newX, y: newY, type: type, backboardSide: 0,
             scale: 0, targetScale: 1, 
@@ -202,7 +202,9 @@ export function spawnNewHoop(state, prevHoop = null) {
             minX: moveMinX, maxX: moveMaxX,
             isConquered: false,
             hasStar,
-            starY: newY - 70
+            starY: newY - 70,
+            starPhase: hasStar ? Math.random() * Math.PI * 2 : 0,
+            starOffsetY: 0
         });
         return; 
     }
@@ -226,7 +228,7 @@ export function spawnNewHoop(state, prevHoop = null) {
         }
     }
 
-    const hasStar = Math.random() < 0.2;
+    const hasStar = Math.random() < 0.4;
     addHoop(state, newX, newY, type, backboardSide, hasStar);
 
     // --- 5. ВЕТЕР (ИСПРАВЛЕНО: Чаще и раньше) ---
@@ -261,6 +263,8 @@ function addHoop(state, x, y, type = HOOP_TYPE.NORMAL, backboardSide = 0, hasSta
         scale: 0, targetScale: 1, moveSpeed: 1.5,
         moveDir: Math.random() > 0.5 ? 1 : -1, isConquered: false,
         hasStar: !!hasStar,
-        starY
+        starY,
+        starPhase: hasStar ? Math.random() * Math.PI * 2 : 0,
+        starOffsetY: 0
     });
 }

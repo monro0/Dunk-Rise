@@ -5,6 +5,14 @@ import { playSound } from './audio.js';
 export function updateGame(dt, state, callbacks) {
     state.cameraY += (state.cameraTargetY - state.cameraY) * 0.1;
 
+    // Star floating animation
+    const time = performance.now() / 200;
+    state.hoops.forEach(h => {
+        if (h.hasStar) {
+            h.starOffsetY = Math.sin(time + h.starPhase) * 5;
+        }
+    });
+
     // Hoops
     state.hoops.forEach(h => {
         if (h.scale < h.targetScale) h.scale += 0.08 * dt;
@@ -173,6 +181,23 @@ function checkCollisions(dt, state, callbacks) {
             // --- КОНЕЦ ИЗМЕНЕНИЙ ---
         }
     });
+
+    // Star collection check
+    if (!state.ball.isSitting && state.ball.visible) {
+        state.hoops.forEach(h => {
+            if (h.hasStar) {
+                const starX = h.x;
+                const starY = h.y - 70 + (h.starOffsetY || 0);
+                const dist = Math.hypot(state.ball.x - starX, state.ball.y - starY);
+                if (dist < BALL_RADIUS + 15) {
+                    addStars(state, 1);
+                    createParticles(state, starX, starY, 15, '#FFD700');
+                    h.hasStar = false;
+                    if (callbacks && callbacks.onStarCollected) callbacks.onStarCollected(state.stars);
+                }
+            }
+        });
+    }
 }
 
 function handleScore(targetHoop, state, callbacks) {
@@ -202,14 +227,6 @@ function handleScore(targetHoop, state, callbacks) {
     state.score += pointsToAdd;
     callbacks.onScore(state.score);
     createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, !state.shotTouchedRim ? pointsToAdd : 0);
-
-    if (targetHoop.hasStar) {
-        addStars(state, 1);
-        createFloatingText(state, state.ball.x, state.ball.y - 70, '+1 ⭐', 0);
-        createParticles(state, state.ball.x, state.ball.y, 15, '#FFD700');
-        targetHoop.hasStar = false;
-        if (callbacks && callbacks.onStarCollected) callbacks.onStarCollected(state.stars);
-    }
 
     const particleColor = state.shop.currentTrailColor || '#FF5722';
     createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
