@@ -33,6 +33,10 @@ export function handleEndDrag(state) {
     state.ball.vy = dy * DRAG_POWER;
     state.ball.isSitting = false;
     state.shotTouchedRim = false;
+    if (state.effects) {
+        state.effects.ballKickTime = 0;
+        state.effects.ballKickDuration = 8;
+    }
 
     // <--- 2. ЗВУК БРОСКА
     // Громкость 0.4, чтобы "вух" не заглушал остальные звуки

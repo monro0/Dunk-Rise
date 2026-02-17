@@ -12,29 +12,33 @@ export const SKINS = [
         id: 'basketball', 
         name: 'Баскетбол', 
         price: 0, 
-        trailColor: '#FF5722' 
+        trailColor: '#FF7A2E',
+        trailAccent: '#FFD28A'
     },
     { 
         id: 'watermelon', 
         name: 'Арбуз', 
         price: 0, 
-        trailColor: '#F44336' // Красный (мякоть)
+        trailColor: '#FF2D55',
+        trailAccent: '#6BFF7A'
     },
     { 
         id: 'zombie', 
         name: 'Зомби', 
         price: 0, 
-        trailColor: '#80CBC4' // Бирюзовый (под цвет скина)
+        trailColor: '#40E6C5',
+        trailAccent: '#B6FF6B'
     },
     { 
         id: 'cosmic', 
         name: 'Космос', 
         price: 1, 
-        trailColor: '#673AB7' 
+        trailColor: '#8B5BFF',
+        trailAccent: '#4AD7FF'
     },
-    { id: 'neon', name: 'Неон', price: 10, trailColor: '#00FFFF' },
-    { id: 'galaxy', name: 'Галактика', price: 20, trailColor: '#AA00FF' },
-    { id: 'golden', name: 'Золотой', price: 50, trailColor: '#FFD700' }
+    { id: 'neon', name: 'Неон', price: 10, trailColor: '#00F5FF', trailAccent: '#FF3DFF' },
+    { id: 'galaxy', name: 'Галактика', price: 20, trailColor: '#B000FF', trailAccent: '#2ED6FF' },
+    { id: 'golden', name: 'Золотой', price: 50, trailColor: '#FFD34D', trailAccent: '#FF9F1A' }
 ];
 
 // Физика

@@ -24,7 +24,7 @@ html, body {
     left: 0;
     touch-action: none; 
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    background-color: #022027; 
+    background-color: #353838; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -36,7 +36,7 @@ html, body {
     height: 100%;
     max-width: 450px; 
     max-height: 850px;
-    background:  #022027;
+    background:  #353838;
     overflow: hidden;
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
     overscroll-behavior: none;
@@ -61,47 +61,91 @@ canvas {
 /* --- UI COMPONENTS: BUTTONS --- */
 
 .btn-primary {
-    background: #FF5722; 
+    position: relative;
+    background: linear-gradient(180deg, #FF9255, #FF6A3A 45%, #FF4A2A);
     color: white;
     border: none;
-    padding: 18px 0; 
+    padding: 18px 0;
     width: 240px;    
     border-radius: 50px;
     font-size: 1.3rem;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 5px 20px rgba(255, 87, 34, 0.4);
-    transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
     touch-action: manipulation;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 20px; 
     display: block; 
+    overflow: hidden;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    animation: buttonIdle 5s ease-in-out infinite;
+}
+
+.btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: 2px 2px 60% 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+    border-radius: 50px;
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .btn-primary:hover {
-    background: #F4511E;
+    filter: brightness(1.02);
 }
 
 .btn-primary:active {
-    transform: scale(0.96);
-    box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4);
+    transform: scale(0.95);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    animation: pressBounce 0.2s ease-out;
+}
+
+#main-menu .btn-primary,
+#gameOverScreen .btn-primary {
+    background: linear-gradient(180deg, #D7C1B6, #B98D7B 45%, #8F5F4E);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
+}
+
+#main-menu .btn-primary::before,
+#gameOverScreen .btn-primary::before {
+    opacity: 0.35;
+}
+
+#main-menu .btn-primary:active,
+#gameOverScreen .btn-primary:active {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .btn-secondary {
-    background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    color: #ccc;
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #E6F2FF;
     padding: 15px 40px;
     border-radius: 50px;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s;
     touch-action: manipulation;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+.btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: 2px 2px 65% 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0));
+    border-radius: 50px;
+    opacity: 0.35;
 }
 .btn-secondary:active {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(0.96);
+    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+    transform: scale(0.95);
 }
 
 
@@ -113,13 +157,99 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #022027;
+    background: radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.08), rgba(53, 56, 56, 0) 55%), linear-gradient(180deg, #3f4343, #2d2f2f);
     z-index: 100;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     transition: opacity 0.3s ease;
+    overflow: hidden;
+}
+
+#main-menu::before {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    left: -160px;
+    top: 10%;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 145, 90, 0.25), rgba(255, 145, 90, 0) 62%);
+    filter: blur(16px);
+    opacity: 0.45;
+    animation: menuFloatSlow 9s ease-in-out infinite;
+}
+
+#main-menu::after {
+    content: "";
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    right: -120px;
+    top: 55%;
+    background: radial-gradient(circle at 40% 40%, rgba(200, 210, 220, 0.25), rgba(200, 210, 220, 0) 65%);
+    filter: blur(14px);
+    opacity: 0.45;
+    animation: menuFloatFast 6.5s ease-in-out infinite;
+}
+
+.menu-scene {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(2px 2px at 20% 30%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+        radial-gradient(2px 2px at 80% 20%, rgba(255, 190, 140, 0.1), rgba(255, 190, 140, 0)),
+        radial-gradient(1.5px 1.5px at 65% 65%, rgba(200, 210, 220, 0.1), rgba(200, 210, 220, 0)),
+        radial-gradient(1.5px 1.5px at 30% 75%, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    background-size: 100% 100%;
+    opacity: 0.55;
+    animation: menuDrift 12s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.menu-scene::before {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    right: 12%;
+    bottom: 18%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.7), rgba(255,255,255,0.1) 45%, rgba(255, 155, 80, 0.08) 70%, rgba(255, 155, 80, 0));
+    box-shadow: 0 0 12px rgba(255, 140, 80, 0.25);
+    animation: menuBall 8s ease-in-out infinite;
+    opacity: 0.6;
+}
+
+.menu-gear {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 3;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s, background 0.2s, color 0.2s;
+}
+
+.menu-gear svg {
+    width: 22px;
+    height: 22px;
+}
+
+.menu-gear:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
 }
 
 .menu-content {
@@ -129,29 +259,41 @@ canvas {
     flex-direction: column;
     align-items: center;
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 2;
+    position: relative;
 }
 
 .game-title {
-    font-size: 4rem;
+    font-size: 4.1rem;
     font-weight: 900;
     line-height: 0.9;
-    color: #FF9800;
-    text-shadow: 0 5px 0 #bf360c, 0 10px 20px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #F3F3F3, #CFCFCF 45%, #AFAFAF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.15), 0 10px 24px rgba(0, 0, 0, 0.45);
     margin-bottom: 40px;
     letter-spacing: -2px;
     font-style: italic;
+    animation: logoPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+    padding-right: 6px;
+    padding-left: 2px;
 }
 
 .menu-record {
-    color: #aeaeae;
-    font-size: 1.2rem;
+    color: #EAF4FF;
+    font-size: 1.1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 40px;
-    background:  #022027;
-    padding: 10px 20px;
+    margin-bottom: 30px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+    padding: 10px 22px;
     border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
 }
 
 .menu-record .trophy-icon {
@@ -167,8 +309,14 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
     gap: 6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0));
+    padding: 6px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
 }
 
 .menu-stars span:last-child {
@@ -183,20 +331,40 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #022027; 
+    background: rgba(20, 20, 20, 0.7);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 150;
     animation: fadeIn 0.3s ease-out;
+    backdrop-filter: blur(6px);
+}
+
+.screen-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 26px;
+    padding: 26px 24px 30px;
+    width: min(92%, 420px);
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+    backdrop-filter: blur(12px);
+    animation: panelPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #settings-screen h2, #shop-screen h2 {
-    color: #FF9800;
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+    font-size: 2.3rem;
+    margin-bottom: 18px;
     text-transform: uppercase;
+    background: linear-gradient(180deg, #F3F3F3, #CFCFCF 45%, #AFAFAF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
 .shop-stars {
@@ -213,12 +381,12 @@ canvas {
 /* --- SHOP GRID --- */
 .shop-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
     gap: 12px;
-    width: 90%;
-    max-height: 60%;
+    width: 100%;
+    max-height: 55vh;
     overflow-y: auto;
-    padding: 5px 10px;
+    padding: 6px 6px 2px;
     
     /* Hide Scrollbar */
     -ms-overflow-style: none;
@@ -231,29 +399,31 @@ canvas {
 
 /* Shop Card (Clickable) */
 .shop-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    border-radius: 12px;
-    padding: 15px 10px; /* Немного увеличил вертикальный паддинг т.к. кнопок нет */
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255, 255, 255, 0.18); 
+    border-radius: 16px;
+    padding: 16px 10px;
     text-align: center;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
-    cursor: pointer; /* Указываем, что это кнопка */
+    cursor: pointer;
     touch-action: manipulation;
+    box-shadow: 0 8px 14px rgba(0,0,0,0.35);
+    backdrop-filter: blur(6px);
 }
 
 /* Эффект нажатия */
 .shop-card:active {
     transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
 }
 
 .shop-card.active {
-    border-color: #FF9800;
-    background: rgba(255, 152, 0, 0.1);
-    box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+    border-color: rgba(255, 145, 80, 0.9);
+    background: linear-gradient(180deg, rgba(255, 168, 102, 0.3), rgba(255, 110, 60, 0.12));
+    box-shadow: 0 0 10px rgba(255, 145, 80, 0.25);
 }
 
 .shop-card--locked {
@@ -282,11 +452,11 @@ canvas {
 
 /* --- CANVAS PREVIEW --- */
 .skin-canvas {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
     display: inline-block;
-    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
-    pointer-events: none; /* Пропускаем клики сквозь канвас на карточку */
+    filter: drop-shadow(0 5px 8px rgba(0,0,0,0.35));
+    pointer-events: none;
 }
 
 /* ----------------------- */
@@ -295,11 +465,17 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 260px;
-    margin-bottom: 50px;
-    font-size: 1.5rem;
+    width: 100%;
+    margin-bottom: 24px;
+    font-size: 1.3rem;
     font-weight: bold;
     color: white;
+    background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 14px rgba(0,0,0,0.3);
+    backdrop-filter: blur(8px);
 }
 
 /* Toggle Switch CSS */
@@ -316,9 +492,10 @@ canvas {
     position: absolute;
     cursor: pointer;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #555;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
     transition: .4s;
     border-radius: 34px;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.35);
 }
 
 .slider:before {
@@ -328,13 +505,14 @@ canvas {
     width: 26px;
     left: 4px;
     bottom: 4px;
-    background-color: white;
+    background: radial-gradient(circle at 30% 30%, #FFFFFF, #CFE9FF);
     transition: .4s;
     border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-input:checked + .slider { background-color: #4CAF50; }
-input:focus + .slider { box-shadow: 0 0 1px #4CAF50; }
+input:checked + .slider { background: linear-gradient(180deg, #75F5A6, #34C76F); box-shadow: 0 0 12px rgba(76, 175, 80, 0.6); }
+input:focus + .slider { box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
 input:checked + .slider:before { transform: translateX(26px); }
 
 
@@ -401,7 +579,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 #topRestartBtn, #homeBtn {
     position: absolute; top: 20px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
     border: none; border-radius: 50%;
     width: 44px; height: 44px;
     color: white; cursor: pointer;
@@ -415,7 +593,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 #topRestartBtn { right: 20px; }
 #homeBtn { left: 20px; }
 #topRestartBtn svg, #homeBtn svg { width: 24px; height: 24px; }
-#topRestartBtn:active, #homeBtn:active { background: rgba(255, 255, 255, 0.3); transform: scale(0.9); }
+#topRestartBtn:active, #homeBtn:active { background: rgba(255, 255, 255, 0.18); transform: scale(0.9); }
 
 .hidden { display: none !important; }
 
@@ -439,7 +617,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     padding: 40px 30px;
     border-radius: 25px;
     text-align: center;
-    box-shadow: 0 10px 50px rgba(0,0,0,0.7);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
     animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     min-width: 300px;
@@ -462,7 +640,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     background: #4CAF50; color: white; border: none;
     padding: 15px 30px; border-radius: 50px;
     font-size: 1.2rem; font-weight: bold; cursor: pointer;
-    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
     transition: transform 0.1s; display: flex; align-items: center;
     justify-content: center; gap: 10px; margin: 0 auto; touch-action: manipulation;
 }
@@ -479,3 +657,11 @@ input:checked + .slider:before { transform: translateX(26px); }
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes logoPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes buttonIdle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes pressBounce { 0% { transform: scale(0.95); } 60% { transform: scale(1.02); } 100% { transform: scale(0.98); } }
+@keyframes panelPop { 0% { transform: scale(0.85); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes menuFloatSlow { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, 12px); } }
+@keyframes menuFloatFast { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-18px, -10px); } }
+@keyframes menuDrift { 0% { transform: translate(0, 0); } 50% { transform: translate(6px, -10px); } 100% { transform: translate(0, 0); } }
+@keyframes menuBall { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-18px) scale(1.03); } }

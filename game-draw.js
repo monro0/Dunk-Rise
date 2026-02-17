@@ -2,116 +2,326 @@ import { MAX_PULL_DISTANCE, DRAG_POWER, GRAVITY, BALL_RADIUS, HOOP_RADIUS, HOOP_
 
 export function drawGame(ctx, state) {
     ctx.clearRect(0, 0, state.width, state.height);
+    renderBackground(ctx, state);
+    const shake = getShakeOffset(state);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
     ctx.save();
     ctx.translate(0, state.cameraY);
-
-    // 1. ФОНОВЫЕ ЭФФЕКТЫ (Ветер)
-    if (state.currentObstacle && state.currentObstacle.type === OBSTACLE_TYPE.WIND) {
-        const left = state.currentObstacle.x - state.currentObstacle.w / 2;
-        const top = state.currentObstacle.y - state.currentObstacle.h / 2;
-        state.currentObstacle.streaks.forEach(s => {
-            ctx.save(); ctx.globalAlpha = s.alpha; ctx.fillStyle = '#CCCCCC';
-            ctx.beginPath(); ctx.rect(left + s.x, top + s.y, s.w, 2); ctx.fill(); ctx.restore();
-        });
-    }
-
-    // 2. СЛОЙ 1: ЗАДНИЕ ЧАСТИ КОЛЕЦ (Щит, Сетка, Задняя дужка) + звёзды над кольцами
+    renderEffects(ctx, state, 'back');
     state.hoops.forEach((h, i) => {
         const isNextHoop = (i === state.currentHoopIndex + 1);
-        
+        renderHoop(ctx, h, isNextHoop, 'back');
+    });
+    renderParticles(ctx, state, 'trail');
+    renderBall(ctx, state);
+    state.hoops.forEach((h, i) => {
+        const isNextHoop = (i === state.currentHoopIndex + 1);
+        renderHoop(ctx, h, isNextHoop, 'front');
+    });
+    renderParticles(ctx, state, 'front');
+    renderEffects(ctx, state, 'front');
+    ctx.restore();
+    ctx.restore();
+}
+
+let noiseCanvas = null;
+
+function renderBackground(ctx, state) {
+    const w = state.width;
+    const h = state.height;
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, '#3f4343');
+    bg.addColorStop(0.5, '#323535');
+    bg.addColorStop(1, '#262727');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    const light = ctx.createRadialGradient(w * 0.5, h * 0.2, 0, w * 0.5, h * 0.2, h * 0.9);
+    light.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+    light.addColorStop(0.4, 'rgba(255, 255, 255, 0.03)');
+    light.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = light;
+    ctx.fillRect(0, 0, w, h);
+
+    const vignette = ctx.createRadialGradient(w * 0.5, h * 0.5, h * 0.2, w * 0.5, h * 0.5, h * 0.75);
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(0.6, 'rgba(0, 0, 0, 0.3)');
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+
+    if (!noiseCanvas) {
+        noiseCanvas = document.createElement('canvas');
+        noiseCanvas.width = 128;
+        noiseCanvas.height = 128;
+        const nctx = noiseCanvas.getContext('2d');
+        const img = nctx.createImageData(noiseCanvas.width, noiseCanvas.height);
+        for (let i = 0; i < img.data.length; i += 4) {
+            const v = 160 + Math.random() * 95;
+            img.data[i] = v;
+            img.data[i + 1] = v;
+            img.data[i + 2] = v;
+            img.data[i + 3] = 18;
+        }
+        nctx.putImageData(img, 0, 0);
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.drawImage(noiseCanvas, 0, 0, w, h);
+    ctx.restore();
+}
+
+function getShakeOffset(state) {
+    if (!state.effects || state.effects.shakeFrames <= 0) return { x: 0, y: 0 };
+    const duration = state.effects.shakeDuration || 1;
+    const t = Math.max(0, state.effects.shakeFrames / duration);
+    const amp = (state.effects.shakeStrength || 0) * t;
+    return {
+        x: (Math.random() - 0.5) * 2 * amp,
+        y: (Math.random() - 0.5) * 2 * amp
+    };
+}
+
+function renderHoop(ctx, h, isNextHoop, layer) {
+    if (h.scale <= 0) return;
+    h.renderScale = getHoopScale(h);
+    if (layer === 'back') {
+        renderHoopShadow(ctx, h);
         if (h.type === HOOP_TYPE.MOVING && h.scale > 0.5) {
             drawHoopRail(ctx, h);
         }
-
         drawHoopBackElements(ctx, h, isNextHoop);
-
         if (h.hasStar && h.scale > 0.3) {
             drawStarAboveHoop(ctx, h);
         }
-    });
-
-    // 3. СЛОЙ 2: МЯЧ И ШЛЕЙФ
-    // Шлейф
-    if (!state.ball.isSitting && state.ball.visible && state.ballTrail.length > 1) {
-        const trailColor = state.shop.currentTrailColor || '#FF5722';
-        for (let i = 0; i < state.ballTrail.length; i++) {
-            const pos = state.ballTrail[i];
-            const ratio = i / state.ballTrail.length; 
-            const size = BALL_RADIUS * ratio * 0.8; 
-            
-            ctx.beginPath();
-            ctx.fillStyle = hexToRgba(trailColor, ratio * 0.5);
-            ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // Aim Line (Линия прицеливания)
-    if (state.isDragging && state.ball.isSitting && state.ball.visible) {
-        let dx = state.dragStart.x - state.dragCurrent.x;
-        let dy = state.dragStart.y - state.dragCurrent.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        
-        if (dist > MAX_PULL_DISTANCE) {
-            const ratio = MAX_PULL_DISTANCE / dist;
-            dx *= ratio; dy *= ratio;
-        }
-        
-        ctx.fillStyle = state.shop.currentTrailColor || '#FF5722';
-        
-        let sx = state.ball.x;
-        let sy = state.ball.y;
-        let svx = dx * DRAG_POWER;
-        let svy = dy * DRAG_POWER;
-        
-        // 2. 10 ТОЧЕК (Компактный прицел)
-        for(let i=0; i<10; i++) {
-            // Уменьшили шаг с 4.5 до 3.5 (точки плотнее)
-            // Уменьшили кол-во точек с 12 до 10 (линия короче)
-            sx += svx * 3.5;
-            sy += svy * 3.5;
-            svy += GRAVITY * 3.5;
-
-            if (sx < BALL_RADIUS) { sx = BALL_RADIUS; svx = -svx * 0.6; } 
-            else if (sx > state.width - BALL_RADIUS) { sx = state.width - BALL_RADIUS; svx = -svx * 0.6; }
-
-            ctx.beginPath();
-            // Размер точки чуть меньше (2.5px вместо 3) для аккуратности
-            ctx.arc(sx, sy, 2.5, 0, Math.PI*2); 
-            ctx.fill();
-        }
-
-    }
-
-    // Сам Мяч
-    if (state.ball.visible) {
-        drawSkin(ctx, state.ball.x, state.ball.y, BALL_RADIUS, state.ball.angle, state.shop.activeSkin);
-    }
-
-    // 4. СЛОЙ 3: ПЕРЕДНИЕ ЧАСТИ КОЛЕЦ (Передняя дужка)
-    state.hoops.forEach((h, i) => {
-        const isNextHoop = (i === state.currentHoopIndex + 1);
+    } else {
         drawHoopFrontElements(ctx, h, isNextHoop);
-    });
-    
-    // 5. ЧАСТИЦЫ (поверх всего)
+    }
+}
+
+function renderHoopShadow(ctx, h) {
+    const scale = h.renderScale || h.scale;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(h.x, h.y + 20, HOOP_RADIUS * 0.95 * scale, HOOP_RADIUS * 0.28 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function renderBall(ctx, state) {
+    if (!state.ball.visible) return;
+    const scale = getBallScale(state);
+    const r = BALL_RADIUS * scale;
+    const trailColor = state.shop.currentTrailColor || '#FF5722';
+
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.ellipse(state.ball.x, state.ball.y + r * 0.85, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = hexToRgba(trailColor, 0.6);
+    ctx.shadowBlur = 18;
+    drawSkin(ctx, state.ball.x, state.ball.y, r, state.ball.angle, state.shop.activeSkin);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(state.ball.x, state.ball.y);
+    ctx.rotate(state.ball.angle);
+    const shade = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.2, 0, 0, r);
+    shade.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+    shade.addColorStop(0.55, 'rgba(255, 255, 255, 0)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(-r * 0.35, -r * 0.35, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function renderParticles(ctx, state, layer) {
+    if (layer === 'trail') {
+        if (!state.ball.isSitting && state.ball.visible && state.ballTrail.length > 1) {
+            const combo = state.comboLevel || 0;
+            if (combo <= 0) return;
+            const trailColor = state.shop.currentTrailColor || '#FF5722';
+            const trailAccent = state.shop.currentTrailAccent || trailColor;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const len = state.ballTrail.length;
+            for (let i = 0; i < len; i++) {
+                const pos = state.ballTrail[i];
+                const ratio = i / (len - 1);
+                const alpha = combo === 2 ? 0.16 + ratio * 0.5 : 0.04 + ratio * 0.18;
+                const size = BALL_RADIUS * (combo === 2 ? 0.22 + ratio * 0.65 : 0.14 + ratio * 0.45);
+                const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size);
+                grad.addColorStop(0, hexToRgba(trailColor, alpha));
+                grad.addColorStop(1, hexToRgba(trailColor, 0));
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                if (combo === 2 && ratio > 0.55) {
+                    ctx.fillStyle = hexToRgba(trailAccent, alpha * 0.9);
+                    ctx.beginPath();
+                    ctx.arc(pos.x + (Math.random() - 0.5) * 6, pos.y + (Math.random() - 0.5) * 6, size * 0.38, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+        return;
+    }
+
     state.particles.forEach(p => {
-        if (p.type === 'dot') { 
-            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; 
-            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill(); 
+        if (p.type === 'dot') {
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        } else if (p.type === 'spark') {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = p.life;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+            grad.addColorStop(0, hexToRgba(p.color, 0.9));
+            grad.addColorStop(1, hexToRgba(p.color, 0));
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
         } else if (p.type === 'text') {
-            ctx.save(); ctx.globalAlpha = p.life; ctx.textAlign = 'center'; ctx.font = 'bold 35px Arial';
+            ctx.save();
+            ctx.globalAlpha = p.life;
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 35px Arial';
             if (p.flameIntensity > 0) {
-                ctx.fillStyle = '#FF3333'; ctx.shadowColor = '#FFD700'; 
+                ctx.fillStyle = '#FF3333';
+                ctx.shadowColor = '#FFD700';
                 let blur = p.flameIntensity >= 5 ? 50 : p.flameIntensity * 10 - 5;
                 ctx.shadowBlur = Math.max(5, blur);
-            } else { ctx.fillStyle = '#FFFFFF'; ctx.shadowColor = 'black'; ctx.shadowBlur = 4; }
-            ctx.fillText(p.text, p.x, p.y); ctx.restore();
+            } else {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 4;
+            }
+            ctx.fillText(p.text, p.x, p.y);
+            ctx.restore();
         }
     });
     ctx.globalAlpha = 1;
+}
 
-    ctx.restore();
+function renderEffects(ctx, state, layer) {
+    if (layer === 'back') {
+        if (state.currentObstacle && state.currentObstacle.type === OBSTACLE_TYPE.WIND) {
+            const left = state.currentObstacle.x - state.currentObstacle.w / 2;
+            const top = state.currentObstacle.y - state.currentObstacle.h / 2;
+            state.currentObstacle.streaks.forEach(s => {
+                ctx.save();
+                ctx.globalAlpha = s.alpha;
+                ctx.fillStyle = '#CCCCCC';
+                ctx.beginPath();
+                ctx.rect(left + s.x, top + s.y, s.w, 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        if (state.isDragging && state.ball.isSitting && state.ball.visible) {
+            let dx = state.dragStart.x - state.dragCurrent.x;
+            let dy = state.dragStart.y - state.dragCurrent.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist > MAX_PULL_DISTANCE) {
+                const ratio = MAX_PULL_DISTANCE / dist;
+                dx *= ratio; dy *= ratio;
+            }
+
+            const trailColor = state.shop.currentTrailColor || '#FF5722';
+            let sx = state.ball.x;
+            let sy = state.ball.y;
+            let svx = dx * DRAG_POWER;
+            let svy = dy * DRAG_POWER;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for(let i=0; i<10; i++) {
+                sx += svx * 3.5;
+                sy += svy * 3.5;
+                svy += GRAVITY * 3.5;
+
+                if (sx < BALL_RADIUS) { sx = BALL_RADIUS; svx = -svx * 0.6; } 
+                else if (sx > state.width - BALL_RADIUS) { sx = state.width - BALL_RADIUS; svx = -svx * 0.6; }
+
+                const size = 2.2 + i * 0.15;
+                const alpha = 0.25 + i * 0.05;
+                const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2.2);
+                grad.addColorStop(0, hexToRgba(trailColor, alpha));
+                grad.addColorStop(1, hexToRgba(trailColor, 0));
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(sx, sy, size * 2.2, 0, Math.PI*2); 
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+    } else {
+        if (state.effects && state.effects.hitFlashes.length > 0) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            state.effects.hitFlashes.forEach(f => {
+                const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius);
+                grad.addColorStop(0, `rgba(255,255,255,${0.9 * f.life})`);
+                grad.addColorStop(0.5, `rgba(255,210,140,${0.6 * f.life})`);
+                grad.addColorStop(1, `rgba(255,210,140,0)`);
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    }
+}
+
+function getBallScale(state) {
+    let scale = 1;
+    if (state.effects) {
+        if (state.effects.ballKickDuration > 0) {
+            const t = Math.min(1, state.effects.ballKickTime / state.effects.ballKickDuration);
+            scale *= 1 + Math.sin(t * Math.PI) * 0.08;
+        }
+        if (state.effects.ballLandDuration > 0) {
+            const t = Math.min(1, state.effects.ballLandTime / state.effects.ballLandDuration);
+            scale *= 1 - Math.sin(t * Math.PI) * 0.06;
+        }
+    }
+    return scale;
+}
+
+function getHoopScale(h) {
+    if (h.bounceDuration > 0 && h.bounceTime !== undefined) {
+        const t = Math.min(1, h.bounceTime / h.bounceDuration);
+        return h.scale * (1 + Math.sin(t * Math.PI) * 0.15);
+    }
+    return h.scale;
 }
 
 export function drawSkin(ctx, x, y, r, angle, skinId) {
@@ -198,21 +408,25 @@ function drawHoopRail(ctx, h) {
 
 function drawBasketball(ctx, r) {
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#FFB74D'); 
-    gradient.addColorStop(1, '#FF9800'); 
+    gradient.addColorStop(0, '#FFD08A'); 
+    gradient.addColorStop(1, '#FF7A2E'); 
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
-    ctx.strokeStyle = '#2e1a0f'; ctx.lineWidth = r * 0.12; ctx.lineCap = 'round';
+    ctx.strokeStyle = '#2b1408'; ctx.lineWidth = r * 0.12; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(r * 0.4, 0, 0, r); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-r, 0); ctx.quadraticCurveTo(0, r * 0.4, r, 0); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 0, r * 0.65, r, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = '#BF360C'; ctx.lineWidth = 1;
+    ctx.strokeStyle = '#B54A1D'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawWatermelon(ctx, r) {
     ctx.save();
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = '#90EE90'; ctx.fill(); ctx.clip();
-    ctx.fillStyle = '#1B5E20'; 
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); 
+    const base = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
+    base.addColorStop(0, '#B6FF9E');
+    base.addColorStop(1, '#2BCB6B');
+    ctx.fillStyle = base; ctx.fill(); ctx.clip();
+    ctx.fillStyle = '#0F6B2C'; 
     const numStripes = 5; const stripeWidth = r * 0.4; const step = (r * 2.5) / numStripes;
     for (let i = 0; i < numStripes; i++) {
         let startX = -r * 1.2 + (step * i);
@@ -230,81 +444,81 @@ function drawWatermelon(ctx, r) {
         ctx.fill();
     }
     ctx.restore();
-    ctx.strokeStyle = '#1B5E20'; ctx.lineWidth = 1;
+    ctx.strokeStyle = '#0F6B2C'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawZombie(ctx, r) {
     const gradient = ctx.createRadialGradient(-r/3, -r/3, r/4, 0, 0, r);
-    gradient.addColorStop(0, '#B2DFDB'); gradient.addColorStop(1, '#80CBC4'); 
+    gradient.addColorStop(0, '#B8FFD9'); gradient.addColorStop(1, '#42D9B8'); 
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
     function drawStaticEye(cx, cy, radius) {
         ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#00695C'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.strokeStyle = '#008A7A'; ctx.lineWidth = 1; ctx.stroke();
         ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(cx + radius*0.3, cy, radius * 0.3, 0, Math.PI*2); ctx.fill();
     }
     drawStaticEye(-r * 0.35, -r * 0.2, r * 0.32);
     drawStaticEye(r * 0.4, -r * 0.25, r * 0.22);
-    ctx.strokeStyle = '#3E2723'; ctx.lineWidth = r * 0.08; ctx.lineCap = 'round';
+    ctx.strokeStyle = '#3E1E16'; ctx.lineWidth = r * 0.08; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.4); ctx.quadraticCurveTo(0, r * 0.6, r * 0.4, r * 0.35); ctx.stroke();
     ctx.lineWidth = r * 0.05; const stitchY = r * 0.45; const stitchX = [-r * 0.2, 0, r * 0.2];
     stitchX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, stitchY - (r*0.1)); ctx.lineTo(x, stitchY + (r*0.1)); ctx.stroke(); });
-    ctx.strokeStyle = '#00695C'; ctx.lineWidth = 2;
+    ctx.strokeStyle = '#008A7A'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.4, -r * 0.7); ctx.stroke();
 }
 
 function drawCosmic(ctx, r) {
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#9C27B0');
-    gradient.addColorStop(0.6, '#673AB7');
-    gradient.addColorStop(1, '#3F51B5');
+    gradient.addColorStop(0, '#B36BFF');
+    gradient.addColorStop(0.6, '#7A4CFF');
+    gradient.addColorStop(1, '#2D5BFF');
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
     ctx.lineWidth = 2;
     ctx.stroke();
 }
 
 function drawNeon(ctx, r) {
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#E0F7FA');
-    gradient.addColorStop(0.5, '#00FFFF');
-    gradient.addColorStop(1, '#0097A7');
+    gradient.addColorStop(0, '#E4FFFF');
+    gradient.addColorStop(0.5, '#00F5FF');
+    gradient.addColorStop(1, '#0076A3');
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
     ctx.lineWidth = 2;
     ctx.stroke();
 }
 
 function drawGalaxy(ctx, r) {
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#E1BEE7');
-    gradient.addColorStop(0.4, '#AA00FF');
-    gradient.addColorStop(1, '#4A148C');
+    gradient.addColorStop(0, '#F0C6FF');
+    gradient.addColorStop(0.4, '#B000FF');
+    gradient.addColorStop(1, '#3E0C7A');
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(170, 0, 255, 0.6)';
+    ctx.strokeStyle = 'rgba(200, 120, 255, 0.7)';
     ctx.lineWidth = 2;
     ctx.stroke();
 }
 
 function drawGolden(ctx, r) {
     const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#FFF8E1');
-    gradient.addColorStop(0.5, '#FFD700');
-    gradient.addColorStop(1, '#FF8F00');
+    gradient.addColorStop(0, '#FFF6C2');
+    gradient.addColorStop(0.5, '#FFD34D');
+    gradient.addColorStop(1, '#FF9F1A');
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
+    ctx.strokeStyle = 'rgba(255, 210, 90, 0.9)';
     ctx.lineWidth = 2;
     ctx.stroke();
 }
@@ -343,6 +557,19 @@ function drawStarAboveHoop(ctx, h) {
     ctx.restore();
 }
 
+function getHoopPalette(h, isNextHoop) {
+    if (h.type === HOOP_TYPE.SPIKED) {
+        return { base: '#FF6B6B', dark: '#B71C1C', glow: 'rgba(255, 90, 90, 0.7)' };
+    }
+    if (h.type === HOOP_TYPE.MOVING) {
+        return { base: '#2FE4FF', dark: '#007C8A', glow: 'rgba(47, 228, 255, 0.7)' };
+    }
+    if (isNextHoop) {
+        return { base: '#FF7A3D', dark: '#C64B1A', glow: 'rgba(255, 130, 80, 0.7)' };
+    }
+    return { base: '#C6CCD2', dark: '#6B747B', glow: 'rgba(200, 210, 220, 0.55)' };
+}
+
 // --- HOOP RENDERING ---
 
 function drawHoopBackElements(ctx, h, isNextHoop) {
@@ -350,18 +577,10 @@ function drawHoopBackElements(ctx, h, isNextHoop) {
     
     ctx.save();
     ctx.translate(h.x, h.y);
-    ctx.scale(h.scale, h.scale);
+    const scale = h.renderScale || h.scale;
+    ctx.scale(scale, scale);
 
-    // Цвет задней части обода
-    let rimColorDark;
-    if (h.type === HOOP_TYPE.SPIKED) {
-        rimColorDark = '#37474F';
-    } else if (h.type === HOOP_TYPE.MOVING) {
-        rimColorDark = '#00838F'; // Dark Cyan (Tech style)
-    } else {
-        rimColorDark = isNextHoop ? '#D84315' : '#757575';
-    }
-    
+    const palette = getHoopPalette(h, isNextHoop);
     const rimLineWidth = 8;
 
     // 1. ЩИТ (Backboard)
@@ -400,11 +619,27 @@ function drawHoopBackElements(ctx, h, isNextHoop) {
         drawSpikes(ctx, true); 
     }
 
-    ctx.strokeStyle = rimColorDark;
+    const rimGradient = ctx.createLinearGradient(0, -HOOP_RADIUS * 0.35, 0, HOOP_RADIUS * 0.35);
+    rimGradient.addColorStop(0, palette.base);
+    rimGradient.addColorStop(1, palette.dark);
+    ctx.strokeStyle = rimGradient;
+    ctx.shadowColor = palette.glow;
+    ctx.shadowBlur = 10;
     ctx.lineWidth = rimLineWidth;
     ctx.beginPath();
     ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, Math.PI, Math.PI * 2, false); 
     ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.lineWidth = rimLineWidth * 0.8;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, HOOP_RADIUS * 0.98, HOOP_RADIUS * 0.33, Math.PI, Math.PI * 2, false); 
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     ctx.restore();
 }
@@ -414,17 +649,10 @@ export function drawHoopFrontElements(ctx, h, isNextHoop) {
     
     ctx.save();
     ctx.translate(h.x, h.y);
-    ctx.scale(h.scale, h.scale);
+    const scale = h.renderScale || h.scale;
+    ctx.scale(scale, scale);
 
-    let rimColor;
-    // Цвет передней части обода
-    if (h.type === HOOP_TYPE.SPIKED) {
-        rimColor = '#546E7A'; 
-    } else if (h.type === HOOP_TYPE.MOVING) {
-        rimColor = '#00BCD4'; // Bright Cyan (Tech style)
-    } else {
-        rimColor = isNextHoop ? '#FF5722' : '#BDBDBD';
-    }
+    const palette = getHoopPalette(h, isNextHoop);
     const rimLineWidth = 8;
 
     // 1. ПЕРЕДНИЕ ШИПЫ
@@ -433,11 +661,27 @@ export function drawHoopFrontElements(ctx, h, isNextHoop) {
     }
 
     // 2. ПЕРЕДНЯЯ ЧАСТЬ ОБОДА
-    ctx.strokeStyle = rimColor;
+    const rimGradient = ctx.createLinearGradient(0, -HOOP_RADIUS * 0.35, 0, HOOP_RADIUS * 0.35);
+    rimGradient.addColorStop(0, palette.base);
+    rimGradient.addColorStop(1, palette.dark);
+    ctx.strokeStyle = rimGradient;
+    ctx.shadowColor = palette.glow;
+    ctx.shadowBlur = 12;
     ctx.lineWidth = rimLineWidth;
     ctx.beginPath();
     ctx.ellipse(0, 0, HOOP_RADIUS, HOOP_RADIUS * 0.35, 0, 0, Math.PI); 
     ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.32)';
+    ctx.lineWidth = rimLineWidth * 0.75;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, HOOP_RADIUS * 0.98, HOOP_RADIUS * 0.33, 0, 0, Math.PI); 
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     // 3. ДЕТАЛИ ДЛЯ TECH STYLE (Заклепки)
     if (h.type === HOOP_TYPE.MOVING) {

@@ -13,6 +13,13 @@
         
         <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu">
+            <div class="menu-scene"></div>
+            <button id="settingsButton" class="menu-gear" aria-label="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3.5"></circle>
+                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.07a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.07a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05a1.7 1.7 0 0 0 1.87.34h0A1.7 1.7 0 0 0 9 3.07V3a2 2 0 1 1 4 0v.07a1.7 1.7 0 0 0 1 1.55h0a1.7 1.7 0 0 0 1.87-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.07a1.7 1.7 0 0 0-1.55 1z"></path>
+                </svg>
+            </button>
             <div class="menu-content">
                 <h1 class="game-title">DUNK<br>RISE</h1>
                 
@@ -33,43 +40,46 @@
 
                 <button id="playButton" class="btn-primary">ИГРАТЬ</button>
                 <button id="shopButton" class="btn-primary">МАГАЗИН</button>
-                <button id="settingsButton" class="btn-primary">НАСТРОЙКИ</button>
             </div>
         </div>
 
         <!-- ЭКРАН МАГАЗИНА -->
         <div id="shop-screen" class="hidden">
-            <h2>МАГАЗИН</h2>
-            <div class="shop-stars">
-                <span aria-hidden="true">⭐</span> <span id="shop-stars">0</span>
+            <div class="screen-panel">
+                <h2>МАГАЗИН</h2>
+                <div class="shop-stars">
+                    <span aria-hidden="true">⭐</span> <span id="shop-stars">0</span>
+                </div>
+                <div class="shop-grid">
+                    <!-- Карточки генерируются в UI.js -->
+                </div>
+                <button id="shopBackBtn" class="btn-secondary" style="margin-top: 30px;">Назад</button>
             </div>
-            <div class="shop-grid">
-                <!-- Карточки генерируются в UI.js -->
-            </div>
-            <button id="shopBackBtn" class="btn-secondary" style="margin-top: 30px;">Назад</button>
         </div>
 
         <!-- ЭКРАН НАСТРОЕК -->
         <div id="settings-screen" class="hidden">
-            <h2>НАСТРОЙКИ</h2>
-            
-            <div class="setting-row">
-                <span>Вибрация</span>
-                <label class="switch">
-                    <input type="checkbox" id="vibrationToggle">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+            <div class="screen-panel">
+                <h2>НАСТРОЙКИ</h2>
+                
+                <div class="setting-row">
+                    <span>Вибрация</span>
+                    <label class="switch">
+                        <input type="checkbox" id="vibrationToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
 
-            <div class="setting-row">
-                <span>Звук</span>
-                <label class="switch">
-                    <input type="checkbox" id="soundToggle">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+                <div class="setting-row">
+                    <span>Звук</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
 
-            <button id="settingsBackBtn" class="btn-secondary">Назад</button>
+                <button id="settingsBackBtn" class="btn-secondary">Назад</button>
+            </div>
         </div>
 
         <!-- HUD ИГРЫ -->

@@ -82,6 +82,8 @@ export function updateGame(dt, state, callbacks) {
         let safeIndex = Math.max(0, state.currentHoopIndex - 1);
         let safeRing = state.hoops[safeIndex];
         if (safeRing && state.ball.y + state.cameraY > (safeRing.y + state.cameraY) + 350) {
+            // Промах мимо колец — сбрасываем комбо
+            state.comboLevel = 0;
             callbacks.onDeath(state.score);
             state.isGameOver = true; 
         }
@@ -98,6 +100,7 @@ export function updateGame(dt, state, callbacks) {
         if (state.ballTrail.length > 0) state.ballTrail = [];
     }
 
+    updateEffects(dt, state);
     updateParticles(dt, state);
 }
 
@@ -218,10 +221,14 @@ function handleScore(targetHoop, state, callbacks) {
         state.swishCombo++;
         pointsToAdd = state.swishCombo;
         playSound('net', 1.0);
+        // Чистое попадание — усиливаем комбо (максимум 2)
+        state.comboLevel = Math.min(2, (state.comboLevel || 0) + 1);
     } else {
         state.swishCombo = 0;
         pointsToAdd = 1;
         playSound('net', 0.6);
+        // Касание дужки — сбрасываем комбо
+        state.comboLevel = 0;
     }
     
     state.score += pointsToAdd;
@@ -230,6 +237,8 @@ function handleScore(targetHoop, state, callbacks) {
 
     const particleColor = state.shop.currentTrailColor || '#FF5722';
     createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
+    createBurstParticles(state, state.ball.x, state.ball.y, 18 + Math.floor(Math.random() * 13), particleColor);
+    triggerHitEffects(state, targetHoop, state.ball.x, state.ball.y);
     
     state.currentHoopIndex++;
     state.ball.isSitting = true; state.ball.vx = 0; state.ball.vy = 0;
@@ -243,7 +252,9 @@ function handleScore(targetHoop, state, callbacks) {
 }
 
 function recoverBall(index, state) {
+    // Возврат на кольцо без прогресса — сброс комбо
     state.swishCombo = 0; 
+    state.comboLevel = 0;
     state.currentHoopIndex = index;
     resetBallToHoop(state, index);
     createParticles(state, state.ball.x, state.ball.y, 10, '#FFFFFF');
@@ -270,8 +281,87 @@ function createParticles(state, x, y, n, colorOverride = null) {
     }
 }
 
+function createBurstParticles(state, x, y, n, colorOverride = null) {
+    for(let i=0; i<n; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 4 + Math.random() * 6;
+        state.particles.push({
+            type: 'spark',
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1,
+            size: 2.5 + Math.random() * 3.5,
+            color: colorOverride || `hsl(${20+Math.random()*30}, 100%, 55%)`
+        });
+    }
+}
+
 function createFloatingText(state, x, y, text, flameIntensity) {
     state.particles.push({ type: 'text', text, x, y, vy: -2, life: 1.0, flameIntensity });
+}
+
+function triggerHitEffects(state, hoop, x, y) {
+    if (state.effects) {
+        state.effects.shakeFrames = 9;
+        state.effects.shakeDuration = 9;
+        state.effects.shakeStrength = 2 + Math.random() * 2;
+        state.effects.hitFlashes.push({ x, y, life: 1, radius: 10 });
+    }
+    if (hoop) {
+        hoop.bounceTime = 0;
+        hoop.bounceDuration = 10;
+    }
+}
+
+function updateEffects(dt, state) {
+    if (!state.effects) return;
+
+    if (state.effects.shakeFrames > 0) {
+        state.effects.shakeFrames -= dt;
+        if (state.effects.shakeFrames < 0) state.effects.shakeFrames = 0;
+    }
+
+    if (state.effects.hitFlashes.length > 0) {
+        for (let i = state.effects.hitFlashes.length - 1; i >= 0; i--) {
+            const f = state.effects.hitFlashes[i];
+            f.radius += 24 * dt;
+            f.life -= 0.09 * dt;
+            if (f.life <= 0) state.effects.hitFlashes.splice(i, 1);
+        }
+    }
+
+    if (state.effects.ballKickDuration > 0) {
+        state.effects.ballKickTime += dt;
+        if (state.effects.ballKickTime > state.effects.ballKickDuration) {
+            state.effects.ballKickTime = state.effects.ballKickDuration;
+            state.effects.ballKickDuration = 0;
+        }
+    }
+
+    if (state.effects.ballLandDuration > 0) {
+        state.effects.ballLandTime += dt;
+        if (state.effects.ballLandTime > state.effects.ballLandDuration) {
+            state.effects.ballLandTime = state.effects.ballLandDuration;
+            state.effects.ballLandDuration = 0;
+        }
+    }
+
+    if (state.ball.isSitting && !state.effects.wasBallSitting) {
+        state.effects.ballLandTime = 0;
+        state.effects.ballLandDuration = 7;
+    }
+    state.effects.wasBallSitting = state.ball.isSitting;
+
+    state.hoops.forEach(h => {
+        if (h.bounceDuration > 0 && h.bounceTime <= h.bounceDuration) {
+            h.bounceTime += dt;
+            if (h.bounceTime > h.bounceDuration) {
+                h.bounceTime = h.bounceDuration;
+            }
+        }
+    });
 }
 
 function updateParticles(dt, state) {
@@ -279,6 +369,11 @@ function updateParticles(dt, state) {
         let p = state.particles[i];
         if (p.type === 'dot') {
             p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.5 * dt; p.life -= 0.03 * dt;
+        } else if (p.type === 'spark') {
+            p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.2 * dt;
+            p.vx *= 0.98; p.vy *= 0.98;
+            p.life -= 0.05 * dt;
+            p.size *= 0.96;
         } else if (p.type === 'text') {
             p.y += p.vy * dt; p.life -= 0.015 * dt;
         }

@@ -34,6 +34,7 @@ export function createMenuState() {
         shop: {
             activeSkin,
             currentTrailColor: skinConfig.trailColor,
+            currentTrailAccent: skinConfig.trailAccent,
             unlockedSkins
         }
     };
@@ -51,6 +52,7 @@ export function createInitialState(width, height) {
         score: 0,
         isGameOver: false,
         swishCombo: 0,
+        comboLevel: 0,
         shotTouchedRim: false,
         cameraY: 0,
         cameraTargetY: 0,
@@ -59,6 +61,7 @@ export function createInitialState(width, height) {
         shop: {
             activeSkin,
             currentTrailColor: skinConfig.trailColor,
+            currentTrailAccent: skinConfig.trailAccent,
             unlockedSkins
         },
 
@@ -70,7 +73,18 @@ export function createInitialState(width, height) {
         currentHoopIndex: 0,
         isDragging: false,
         dragStart: { x: 0, y: 0 },
-        dragCurrent: { x: 0, y: 0 }
+        dragCurrent: { x: 0, y: 0 },
+        effects: {
+            shakeFrames: 0,
+            shakeDuration: 0,
+            shakeStrength: 0,
+            hitFlashes: [],
+            ballKickTime: 0,
+            ballKickDuration: 0,
+            ballLandTime: 0,
+            ballLandDuration: 0,
+            wasBallSitting: true
+        }
     };
 
     addHoop(state, width / 2, height * 0.75, HOOP_TYPE.NORMAL);
@@ -89,6 +103,7 @@ export function setActiveSkin(state, skinId) {
     if (skinConfig) {
         state.shop.activeSkin = skinId;
         state.shop.currentTrailColor = skinConfig.trailColor;
+        state.shop.currentTrailAccent = skinConfig.trailAccent;
         localStorage.setItem('dunkRise_activeSkin', skinId);
     }
 }
@@ -119,6 +134,7 @@ export function reviveGameLogic(state) {
     resetBallToHoop(state, state.currentHoopIndex);
     state.ball.visible = true;
     state.swishCombo = 0;
+    state.comboLevel = 0;
 }
 
 // --- HELPERS ---
@@ -134,6 +150,7 @@ export function resetBallToHoop(state, index) {
     state.ballTrail = []; 
     state.shotTouchedRim = false;
     state.cameraTargetY = -h.y + state.height * 0.7;
+    state.comboLevel = 0;
 }
 
 // --- SPAWNER LOGIC (PING-PONG + RAILS) ---
