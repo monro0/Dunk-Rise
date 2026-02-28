@@ -68,14 +68,16 @@ export function updateGame(dt, state, callbacks) {
         }
 
         // Walls (С ЗВУКОМ УДАРА)
-        if (state.ball.x < BALL_RADIUS) { 
-            state.ball.x = BALL_RADIUS; 
+        if (state.ball.x < BALL_RADIUS) {
+            state.ball.x = BALL_RADIUS;
             state.ball.vx *= -0.55;
-            if (Math.abs(state.ball.vx) > 3) playSound('bounce', 0.4); 
-        } 
-        else if (state.ball.x > state.width - BALL_RADIUS) { 
-            state.ball.x = state.width - BALL_RADIUS; 
+            state.ball.bouncedOffWall = true; // Отскок от стены
+            if (Math.abs(state.ball.vx) > 3) playSound('bounce', 0.4);
+        }
+        else if (state.ball.x > state.width - BALL_RADIUS) {
+            state.ball.x = state.width - BALL_RADIUS;
             state.ball.vx *= -0.55;
+            state.ball.bouncedOffWall = true; // Отскок от стены
             if (Math.abs(state.ball.vx) > 3) playSound('bounce', 0.4);
         }
 
@@ -131,11 +133,12 @@ function checkCollisions(dt, state, callbacks) {
             // Щит (Backboard)
             if (h.type === HOOP_TYPE.BACKBOARD) {
                 const boardX = h.x + (HOOP_RADIUS + 10) * h.backboardSide;
-                const boardY = h.y - 40; 
+                const boardY = h.y - 40;
                 if (state.ball.y > boardY - 40 && state.ball.y < boardY + 40 && Math.abs(state.ball.x - boardX) < BALL_RADIUS + 5) {
                     state.ball.vx = -h.backboardSide * Math.abs(state.ball.vx) * 0.8;
                     if (Math.abs(state.ball.vx) < 2) state.ball.vx = -h.backboardSide * 4;
                     state.ball.x = boardX - (h.backboardSide * (BALL_RADIUS + 5 + 1));
+                    state.ball.bouncedOffBackboard = true; // Отскок от щита
                     playSound('bounce', 0.6);
                 }
             }
@@ -204,19 +207,21 @@ function checkCollisions(dt, state, callbacks) {
 }
 
 function handleScore(targetHoop, state, callbacks) {
-    if (targetHoop.isConquered) { 
+    if (targetHoop.isConquered) {
         // Если попали в уже завоеванное кольцо, просто возвращаемся на него
-        recoverBall(state.hoops.indexOf(targetHoop), state); 
-        return; 
+        recoverBall(state.hoops.indexOf(targetHoop), state);
+        return;
     }
     targetHoop.isConquered = true;
-    
+
     if (callbacks.onHaptic) {
         const hapticStyle = !state.shotTouchedRim ? 'medium' : 'light';
         callbacks.onHaptic(hapticStyle);
     }
 
     let pointsToAdd = 0;
+    let isBlueBonus = state.ball.bouncedOffWall || state.ball.bouncedOffBackboard;
+    
     if (!state.shotTouchedRim) {
         state.swishCombo++;
         pointsToAdd = state.swishCombo;
@@ -231,21 +236,37 @@ function handleScore(targetHoop, state, callbacks) {
         state.comboLevel = 0;
     }
     
+    // Бонус +1 за отскок от стены или щита
+    if (isBlueBonus) {
+        pointsToAdd += 1;
+    }
+
     state.score += pointsToAdd;
     callbacks.onScore(state.score);
-    createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, !state.shotTouchedRim ? pointsToAdd : 0);
-
-    const particleColor = state.shop.currentTrailColor || '#FF5722';
-    createParticles(state, state.ball.x, state.ball.y, 25, particleColor);
-    createBurstParticles(state, state.ball.x, state.ball.y, 18 + Math.floor(Math.random() * 13), particleColor);
-    triggerHitEffects(state, targetHoop, state.ball.x, state.ball.y);
     
+    // Убираем эффекты частиц при попадании
+    // createParticles и createBurstParticles отключены
+
+    // Сбрасываем флаги отскоков
+    state.ball.bouncedOffWall = false;
+    state.ball.bouncedOffBackboard = false;
+
+    // Показываем текст с очками
+    if (isBlueBonus) {
+        // Сначала обычное очко (белое)
+        createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, 0, null, 24, 0);
+        // Затем с задержкой 0.5 секунды синий бонус +1
+        createFloatingText(state, state.ball.x, state.ball.y - 80, '+1', 0, '#4AD6FF', 24, 30); // 30 кадров ≈ 0.5 секунды
+    } else {
+        createFloatingText(state, state.ball.x, state.ball.y - 50, `+${pointsToAdd}`, 0, null, 24, 0);
+    }
+
     state.currentHoopIndex++;
     state.ball.isSitting = true; state.ball.vx = 0; state.ball.vy = 0;
     if (targetHoop.type !== HOOP_TYPE.MOVING) state.ball.x = targetHoop.x;
     state.ball.y = targetHoop.y;
-    state.ballTrail = []; 
-    
+    state.ballTrail = [];
+
     const h = state.hoops[state.currentHoopIndex];
     state.cameraTargetY = -h.y + state.height * 0.7;
     if (state.currentHoopIndex === state.hoops.length - 1) spawnNewHoop(state);
@@ -298,21 +319,19 @@ function createBurstParticles(state, x, y, n, colorOverride = null) {
     }
 }
 
-function createFloatingText(state, x, y, text, flameIntensity) {
-    state.particles.push({ type: 'text', text, x, y, vy: -2, life: 1.0, flameIntensity });
-}
-
-function triggerHitEffects(state, hoop, x, y) {
-    if (state.effects) {
-        state.effects.shakeFrames = 9;
-        state.effects.shakeDuration = 9;
-        state.effects.shakeStrength = 2 + Math.random() * 2;
-        state.effects.hitFlashes.push({ x, y, life: 1, radius: 10 });
-    }
-    if (hoop) {
-        hoop.bounceTime = 0;
-        hoop.bounceDuration = 10;
-    }
+function createFloatingText(state, x, y, text, flameIntensity, color = null, fontSize = 24, delay = 0) {
+    state.particles.push({ 
+        type: 'text', 
+        text, 
+        x, 
+        y, 
+        vy: -2, 
+        life: 1.0, 
+        flameIntensity,
+        color: color,
+        fontSize: fontSize,
+        delay: delay // Задержка перед появлением
+    });
 }
 
 function updateEffects(dt, state) {
@@ -367,6 +386,16 @@ function updateEffects(dt, state) {
 function updateParticles(dt, state) {
     for(let i=state.particles.length-1; i>=0; i--) {
         let p = state.particles[i];
+        
+        // Обработка задержки для текста
+        if (p.type === 'text' && p.delay > 0) {
+            p.delay -= dt;
+            if (p.delay > 0) {
+                continue; // Ещё не показываем, не обновляем
+            }
+            p.delay = 0;
+        }
+        
         if (p.type === 'dot') {
             p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.5 * dt; p.life -= 0.03 * dt;
         } else if (p.type === 'spark') {

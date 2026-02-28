@@ -7,6 +7,7 @@ import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
 import { initAudio, playSound } from './audio.js';
 import { saveScore } from './leaderboard.js';
+import { loadAllSkins } from './skin-loader.js';
 
 // --- TELEGRAM BRIDGE (FIX FOR UPLOAD ERRORS) ---
 // Безопасная обертка, чтобы скрыть прямые вызовы window.Telegram
@@ -331,11 +332,15 @@ function loop(timestamp) {
     requestAnimationFrame(loop);
 }
 
-function init() {
+async function init() {
     UI.initUI();
     Config.initializeConfig(canvas);
     loadSettings();
     initAudio();
+    
+    // Загружаем текстуры скинов
+    await loadAllSkins(Config.SKINS, 'assets/skins/');
+    
     resize();
     UI.showMainMenu();
     lastTime = performance.now();

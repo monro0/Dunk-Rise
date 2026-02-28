@@ -1,6 +1,7 @@
 import { SKINS } from './config.js';
 import { drawSkin } from './game-draw.js';
 import { getTopPlayers } from './leaderboard.js';
+import { isSkinLoaded } from './skin-loader.js';
 
 // --- UI MANAGER (Pure View) ---
 

@@ -65,7 +65,7 @@ export function createInitialState(width, height) {
             unlockedSkins
         },
 
-        ball: { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true },
+        ball: { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true, bouncedOffWall: false, bouncedOffBackboard: false },
         ballTrail: [],
         hoops: [],
         particles: [],

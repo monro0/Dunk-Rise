@@ -1,4 +1,5 @@
 import { MAX_PULL_DISTANCE, DRAG_POWER, GRAVITY, BALL_RADIUS, HOOP_RADIUS, HOOP_TYPE, OBSTACLE_TYPE } from './config.js';
+import { getSkinTexture } from './skin-loader.js';
 
 export function drawGame(ctx, state) {
     ctx.clearRect(0, 0, state.width, state.height);
@@ -207,15 +208,26 @@ function renderParticles(ctx, state, layer) {
             ctx.fill();
             ctx.restore();
         } else if (p.type === 'text') {
+            // Не рисуем если задержка ещё не прошла
+            if (p.delay > 0) {
+                return;
+            }
+            
             ctx.save();
             ctx.globalAlpha = p.life;
             ctx.textAlign = 'center';
-            ctx.font = 'bold 35px Arial';
+            const fontSize = p.fontSize || 24;
+            ctx.font = `bold ${fontSize}px Arial`;
             if (p.flameIntensity > 0) {
                 ctx.fillStyle = '#FF3333';
                 ctx.shadowColor = '#FFD700';
                 let blur = p.flameIntensity >= 5 ? 50 : p.flameIntensity * 10 - 5;
                 ctx.shadowBlur = Math.max(5, blur);
+            } else if (p.color) {
+                // Кастомный цвет (бонус) - без свечения
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
             } else {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.shadowColor = 'black';
@@ -329,29 +341,47 @@ export function drawSkin(ctx, x, y, r, angle, skinId) {
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    switch(skinId) {
-        case 'watermelon':
-            drawWatermelon(ctx, r);
-            break;
-        case 'zombie':
-            drawZombie(ctx, r);
-            break;
-        case 'cosmic':
-            drawCosmic(ctx, r);
-            break;
-        case 'neon':
-            drawNeon(ctx, r);
-            break;
-        case 'galaxy':
-            drawGalaxy(ctx, r);
-            break;
-        case 'golden':
-            drawGolden(ctx, r);
-            break;
-        case 'basketball':
-        default:
-            drawBasketball(ctx, r);
-            break;
+    // Пробуем использовать текстуру
+    const texture = getSkinTexture(skinId);
+    if (texture && texture.complete) {
+        // Рисуем текстуру как круглую маску
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Растягиваем текстуру на весь круг с заполнением
+        // Учитываем прозрачные поля по краям
+        const fillRatio = 1.0; // 1.0 = 100% заполнение
+        const drawSize = r * 2 * fillRatio;
+        
+        ctx.drawImage(texture, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+    } else {
+        // Резерв: рисуем процедурно
+        switch(skinId) {
+            case 'watermelon':
+                drawWatermelon(ctx, r);
+                break;
+            case 'zombie':
+                drawZombie(ctx, r);
+                break;
+            case 'cosmic':
+                drawCosmic(ctx, r);
+                break;
+            case 'neon':
+                drawNeon(ctx, r);
+                break;
+            case 'galaxy':
+                drawGalaxy(ctx, r);
+                break;
+            case 'golden':
+                drawGolden(ctx, r);
+                break;
+            case 'basketball':
+            default:
+                drawBasketball(ctx, r);
+                break;
+        }
     }
 
     ctx.restore();
