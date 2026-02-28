@@ -13,16 +13,16 @@
         
         <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu">
-            <div class="menu-scene"></div>
-            <button id="settingsButton" class="menu-gear" aria-label="Настройки">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3.5"></circle>
-                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.07a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.07a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05a1.7 1.7 0 0 0 1.87.34h0A1.7 1.7 0 0 0 9 3.07V3a2 2 0 1 1 4 0v.07a1.7 1.7 0 0 0 1 1.55h0a1.7 1.7 0 0 0 1.87-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.07a1.7 1.7 0 0 0-1.55 1z"></path>
+            <button id="settingsButton" class="menu-icon-btn" aria-label="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
             </button>
+            
             <div class="menu-content">
-                <h1 class="game-title">DUNK<br>RISE</h1>
-                
+                <h1 class="game-title">DUNK RISE</h1>
+
                 <div class="menu-record">
                     <svg class="trophy-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
@@ -34,12 +34,29 @@
                     </svg>
                     <span>BEST: <span id="menu-high-score">0</span></span>
                 </div>
+
+                <button id="playButton" class="btn-neon-primary">ИГРАТЬ</button>
+
+                <div class="menu-secondary">
+                    <button id="shopButton" class="menu-secondary-btn" aria-label="Магазин">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                    </button>
+                    <button class="menu-secondary-btn" aria-label="Таблица лидеров">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 20V10"></path>
+                            <path d="M12 20V4"></path>
+                            <path d="M6 20v-6"></path>
+                        </svg>
+                    </button>
+                </div>
+
                 <div class="menu-stars">
                     <span aria-hidden="true">⭐</span> <span id="menu-stars">0</span>
                 </div>
-
-                <button id="playButton" class="btn-primary">ИГРАТЬ</button>
-                <button id="shopButton" class="btn-primary">МАГАЗИН</button>
             </div>
         </div>
 
@@ -137,9 +154,8 @@
             <div class="modal">
                 <h1>ПРОИГРЫШ</h1>
                 <div id="finalScore"></div>
-                <!-- Кнопки используют общий класс btn-primary -->
-                <button id="restartButton" class="btn-primary">Играть снова</button>
-                <button id="goHomeButton" class="btn-primary">В Меню</button>
+                <button id="restartButton" class="btn-neon-primary">Играть снова</button>
+                <button id="goHomeButton" class="btn-neon-secondary">В Меню</button>
             </div>
         </div>
     </div>
