@@ -1,5 +1,6 @@
 import { SKINS } from './config.js';
 import { drawSkin } from './game-draw.js';
+import { getTopPlayers } from './leaderboard.js';
 
 // --- UI MANAGER (Pure View) ---
 
@@ -20,10 +21,15 @@ const settingsScreen = document.getElementById('settings-screen');
 const vibrationToggle = document.getElementById('vibrationToggle');
 const soundToggle = document.getElementById('soundToggle');
 
-
 // Shop Elements
 const shopScreen = document.getElementById('shop-screen');
 const shopContainer = document.querySelector('.shop-grid');
+
+// Leaderboard Elements
+const leaderboardScreen = document.getElementById('leaderboard-screen');
+const leaderboardList = document.getElementById('leaderboard-list');
+
+let leaderboardUnsubscribe = null;
 
 export function initUI() {
     const savedScore = localStorage.getItem('dunkRiseHighScore') || '0';
@@ -206,4 +212,84 @@ export function showGameOverScreen(score, isNewRecord) {
 
 export function hideGameOverScreen() {
     gameOverScreen.classList.add('hidden');
+}
+
+// --- LEADERBOARD UI ---
+
+export function showLeaderboard() {
+    if (leaderboardScreen) {
+        leaderboardScreen.classList.remove('hidden');
+        loadLeaderboard();
+    }
+    // Скрываем главное меню
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.classList.add('hidden');
+    }
+}
+
+export function hideLeaderboard() {
+    if (leaderboardScreen) {
+        leaderboardScreen.classList.add('hidden');
+    }
+    // Показываем главное меню
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.classList.remove('hidden');
+    }
+    // Отписываемся от обновлений
+    if (leaderboardUnsubscribe) {
+        leaderboardUnsubscribe();
+        leaderboardUnsubscribe = null;
+    }
+}
+
+function loadLeaderboard() {
+    if (!leaderboardList) return;
+    
+    leaderboardList.innerHTML = '<div class="leaderboard-loading">Загрузка...</div>';
+    
+    // Загружаем топ игроков
+    leaderboardUnsubscribe = getTopPlayers(20, (players) => {
+        renderLeaderboard(players);
+    });
+}
+
+function renderLeaderboard(players) {
+    if (!leaderboardList) return;
+    
+    if (players.length === 0) {
+        leaderboardList.innerHTML = '<div class="leaderboard-empty">Пока нет игроков. Стань первым!</div>';
+        return;
+    }
+    
+    const myPlayerId = localStorage.getItem('dunkRise_playerId') || '';
+    const isTelegram = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe;
+    let tgId = '';
+    if (isTelegram) {
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+        if (user && user.id) {
+            tgId = `tg_${user.id}`;
+        }
+    }
+    
+    leaderboardList.innerHTML = players.map(player => {
+        const isMyRank = player.id === myPlayerId || (tgId && player.id === tgId);
+        const rankClass = player.rank <= 3 ? `rank-${player.rank}` : '';
+        const myRankClass = isMyRank ? 'my-rank-row' : '';
+        
+        return `
+            <div class="leaderboard-row ${rankClass} ${myRankClass}">
+                <span class="lb-rank">${player.rank}</span>
+                <span class="lb-name">${escapeHtml(player.name)}</span>
+                <span class="lb-score">${player.score}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

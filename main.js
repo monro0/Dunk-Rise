@@ -6,12 +6,13 @@ import * as GameDraw from './game-draw.js';
 import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
 import { initAudio, playSound } from './audio.js';
+import { saveScore } from './leaderboard.js';
 
 // --- TELEGRAM BRIDGE (FIX FOR UPLOAD ERRORS) ---
 // Безопасная обертка, чтобы скрыть прямые вызовы window.Telegram
 const tg = (() => {
-    const app = (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) 
-        ? window.Telegram.WebApp 
+    const app = (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp)
+        ? window.Telegram.WebApp
         : null;
 
     return {
@@ -40,12 +41,14 @@ const ctx = canvas.getContext('2d');
 const playButton = document.getElementById('playButton');
 const settingsButton = document.getElementById('settingsButton');
 const shopButton = document.getElementById('shopButton');
+const leaderboardButton = document.getElementById('leaderboardButton');
 
 // HUD & Shop
 const homeBtn = document.getElementById('homeBtn');
 const topRestartBtn = document.getElementById('topRestartBtn');
 const shopBackBtn = document.getElementById('shopBackBtn');
 const settingsBackBtn = document.getElementById('settingsBackBtn');
+const leaderboardBackBtn = document.getElementById('leaderboardBackBtn');
 
 // Modals
 const restartButton = document.getElementById('restartButton');
@@ -176,7 +179,19 @@ function performCloseSecondChance() {
 function showFinalGameOver(finalScore) {
     const currentHigh = parseInt(localStorage.getItem('dunkRiseHighScore') || '0');
     const isRecord = finalScore > currentHigh;
+    
     UI.showGameOverScreen(finalScore, isRecord);
+    
+    // Автоматически сохраняем результат в таблице лидеров
+    if (finalScore > 0) {
+        saveScore(finalScore).then((saved) => {
+            if (saved && GameSettings.vibration) {
+                tg.haptic('success');
+            }
+        }).catch((error) => {
+            console.error('Ошибка сохранения рекорда:', error);
+        });
+    }
 }
 
 function performRevive() {
@@ -244,7 +259,9 @@ function addInteractionListener(element, callback) {
 addInteractionListener(playButton, startGame);
 addInteractionListener(settingsButton, UI.showSettings);
 addInteractionListener(shopButton, openShop);
+addInteractionListener(leaderboardButton, UI.showLeaderboard);
 addInteractionListener(shopBackBtn, closeShop);
+addInteractionListener(leaderboardBackBtn, UI.hideLeaderboard);
 addInteractionListener(homeBtn, goToMenu);
 addInteractionListener(topRestartBtn, performFullRestart);
 addInteractionListener(restartButton, performFullRestart);

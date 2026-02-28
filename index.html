@@ -45,7 +45,7 @@
                             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                         </svg>
                     </button>
-                    <button class="menu-secondary-btn" aria-label="Таблица лидеров">
+                    <button id="leaderboardButton" class="menu-secondary-btn" aria-label="Таблица лидеров">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 20V10"></path>
                             <path d="M12 20V4"></path>
@@ -96,6 +96,19 @@
                 </div>
 
                 <button id="settingsBackBtn" class="btn-secondary">Назад</button>
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦА ЛИДЕРОВ -->
+        <div id="leaderboard-screen" class="hidden">
+            <div class="screen-panel leaderboard-panel">
+                <h2>ТОП ИГРОКОВ</h2>
+                
+                <div id="leaderboard-list" class="leaderboard-list">
+                    <div class="leaderboard-loading">Загрузка...</div>
+                </div>
+                
+                <button id="leaderboardBackBtn" class="btn-neon-secondary" style="margin-top: 20px;">Назад</button>
             </div>
         </div>
 
