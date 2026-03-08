@@ -1,4 +1,4 @@
-import { HOOP_TYPE, OBSTACLE_TYPE, BALL_RADIUS, HOOP_RADIUS, HOOP_DIAMETER, HOOP_MARGIN, SKINS } from './config.js';
+import { HOOP_TYPE, OBSTACLE_TYPE, BALL_RADIUS, HOOP_RADIUS, HOOP_DIAMETER, HOOP_MARGIN, SKINS, CASE_SKINS } from './config.js';
 
 // --- FACTORY ---
 
@@ -9,6 +9,17 @@ function loadStars() {
     if (raw === null) return 0;
     const n = parseInt(raw, 10);
     return isNaN(n) ? 0 : Math.max(0, n);
+}
+
+function loadCaseUnlockedSkins() {
+    try {
+        const raw = localStorage.getItem('dunkRise_caseUnlockedSkins');
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+    } catch (_) {
+        return [];
+    }
 }
 
 function loadUnlockedSkins() {
@@ -26,16 +37,20 @@ function loadUnlockedSkins() {
 export function createMenuState() {
     const stars = loadStars();
     const unlockedSkins = loadUnlockedSkins();
+    const caseUnlockedSkins = loadCaseUnlockedSkins();
     const savedSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
-    const activeSkin = unlockedSkins.includes(savedSkin) ? savedSkin : 'basketball';
-    const skinConfig = SKINS.find(s => s.id === activeSkin) || SKINS[0];
+    const activeSkin = unlockedSkins.includes(savedSkin) || caseUnlockedSkins.includes(savedSkin)
+        ? savedSkin : 'basketball';
+    const skinConfig = SKINS.find(s => s.id === activeSkin)
+        || CASE_SKINS.find(s => s.id === activeSkin) || SKINS[0];
     return {
         stars,
         shop: {
             activeSkin,
             currentTrailColor: skinConfig.trailColor,
             currentTrailAccent: skinConfig.trailAccent,
-            unlockedSkins
+            unlockedSkins,
+            caseUnlockedSkins
         }
     };
 }
@@ -43,8 +58,11 @@ export function createMenuState() {
 export function createInitialState(width, height) {
     const savedSkin = localStorage.getItem('dunkRise_activeSkin') || 'basketball';
     const unlockedSkins = loadUnlockedSkins();
-    const activeSkin = unlockedSkins.includes(savedSkin) ? savedSkin : 'basketball';
-    const skinConfig = SKINS.find(s => s.id === activeSkin) || SKINS[0];
+    const caseUnlockedSkins = loadCaseUnlockedSkins();
+    const activeSkin = unlockedSkins.includes(savedSkin) || caseUnlockedSkins.includes(savedSkin)
+        ? savedSkin : 'basketball';
+    const skinConfig = SKINS.find(s => s.id === activeSkin)
+        || CASE_SKINS.find(s => s.id === activeSkin) || SKINS[0];
 
     const state = {
         width: width,
@@ -62,7 +80,8 @@ export function createInitialState(width, height) {
             activeSkin,
             currentTrailColor: skinConfig.trailColor,
             currentTrailAccent: skinConfig.trailAccent,
-            unlockedSkins
+            unlockedSkins,
+            caseUnlockedSkins
         },
 
         ball: { x: 0, y: 0, vx: 0, vy: 0, angle: 0, isSitting: true, visible: true, bouncedOffWall: false, bouncedOffBackboard: false },
@@ -98,14 +117,24 @@ export function createInitialState(width, height) {
 }
 
 export function setActiveSkin(state, skinId) {
-    if (!state.shop.unlockedSkins.includes(skinId)) return;
-    const skinConfig = SKINS.find(s => s.id === skinId);
+    const caseUnlocked = state.shop.caseUnlockedSkins || [];
+    if (!state.shop.unlockedSkins.includes(skinId) && !caseUnlocked.includes(skinId)) return;
+    const skinConfig = SKINS.find(s => s.id === skinId)
+        || CASE_SKINS.find(s => s.id === skinId);
     if (skinConfig) {
         state.shop.activeSkin = skinId;
         state.shop.currentTrailColor = skinConfig.trailColor;
         state.shop.currentTrailAccent = skinConfig.trailAccent;
         localStorage.setItem('dunkRise_activeSkin', skinId);
     }
+}
+
+export function unlockCaseSkin(state, skinId) {
+    if (!state.shop.caseUnlockedSkins) state.shop.caseUnlockedSkins = [];
+    if (state.shop.caseUnlockedSkins.includes(skinId)) return false; // уже есть
+    state.shop.caseUnlockedSkins.push(skinId);
+    localStorage.setItem('dunkRise_caseUnlockedSkins', JSON.stringify(state.shop.caseUnlockedSkins));
+    return true; // новый скин
 }
 
 export function addStars(state, amount) {

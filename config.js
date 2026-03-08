@@ -41,6 +41,29 @@ export const SKINS = [
     { id: 'golden', name: 'Кристалл', price: 50, trailColor: '#00CCDD', trailAccent: '#AAFFEE' }
 ];
 
+// --- CASE SKINS CONFIGURATION ---
+export const CASE_COST = 20;
+
+export const RARITY = {
+    COMMON:    { id: 'common',    label: 'Обычный',  color: '#AAAAAA', glow: null },
+    RARE:      { id: 'rare',      label: 'Редкий',   color: '#4A9EFF', glow: null },
+    EPIC:      { id: 'epic',      label: 'Эпик',     color: '#CC44FF', glow: '#CC44FF' },
+    LEGENDARY: { id: 'legendary', label: 'Легенда',  color: '#FFD700', glow: '#FFD700' },
+};
+
+export const CASE_SKINS = [
+    { id: 'case_cherry',     name: 'Вишня',    rarity: RARITY.COMMON,    weight: 14, trailColor: '#FF2244', trailAccent: '#FF8899' },
+    { id: 'case_moon',       name: 'Луна',     rarity: RARITY.COMMON,    weight: 14, trailColor: '#AAAAAA', trailAccent: '#FFFFFF' },
+    { id: 'case_wood',       name: 'Дерево',   rarity: RARITY.COMMON,    weight: 14, trailColor: '#8B4513', trailAccent: '#D2691E' },
+    { id: 'case_slime',      name: 'Слизь',    rarity: RARITY.COMMON,    weight: 13, trailColor: '#44FF44', trailAccent: '#AAFFAA' },
+    { id: 'case_strawberry', name: 'Клубника', rarity: RARITY.RARE,      weight: 10, trailColor: '#FF3366', trailAccent: '#FF99BB' },
+    { id: 'case_earth',      name: 'Земля',    rarity: RARITY.RARE,      weight: 10, trailColor: '#4499FF', trailAccent: '#44FF99' },
+    { id: 'case_prism',      name: 'Призма',   rarity: RARITY.RARE,      weight: 10, trailColor: '#FF44FF', trailAccent: '#44FFFF' },
+    { id: 'case_demon',      name: 'Демон',    rarity: RARITY.EPIC,      weight: 6,  trailColor: '#FF2200', trailAccent: '#FF9900' },
+    { id: 'case_portal',     name: 'Портал',   rarity: RARITY.EPIC,      weight: 6,  trailColor: '#8800FF', trailAccent: '#00FFFF' },
+    { id: 'case_dragon',     name: 'Дракон',   rarity: RARITY.LEGENDARY, weight: 3,  trailColor: '#AA4400', trailAccent: '#FF8800' },
+];
+
 // Физика
 export const GRAVITY = 0.75;        // Высокая гравитация для крутых дуг
 export const DRAG_POWER = 0.20;     // Мощный бросок, чтобы компенсировать тяжесть

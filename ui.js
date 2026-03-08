@@ -1,4 +1,4 @@
-import { SKINS } from './config.js';
+import { SKINS, CASE_SKINS, CASE_COST } from './config.js';
 import { drawSkin } from './game-draw.js';
 import { getTopPlayers } from './leaderboard.js';
 import { isSkinLoaded } from './skin-loader.js';
@@ -25,6 +25,21 @@ const soundToggle = document.getElementById('soundToggle');
 // Shop Elements
 const shopScreen = document.getElementById('shop-screen');
 const shopContainer = document.querySelector('.shop-grid');
+const tabSkins = document.getElementById('tabSkins');
+const tabCase = document.getElementById('tabCase');
+const shopSkinsContent = document.getElementById('shopSkinsContent');
+const shopCaseContent = document.getElementById('shopCaseContent');
+const caseReelStrip = document.getElementById('caseReelStrip');
+const caseOpenBtn = document.getElementById('caseOpenBtn');
+const caseOwnedGrid = document.getElementById('caseOwnedGrid');
+const caseResultPopup = document.getElementById('caseResultPopup');
+const caseResultRarity = document.getElementById('caseResultRarity');
+const caseResultCanvas = document.getElementById('caseResultCanvas');
+const caseResultName = document.getElementById('caseResultName');
+const caseResultBonus = document.getElementById('caseResultBonus');
+const caseResultCloseBtn = document.getElementById('caseResultCloseBtn');
+
+let caseIsSpinning = false;
 
 // Leaderboard Elements
 const leaderboardScreen = document.getElementById('leaderboard-screen');
@@ -88,16 +103,45 @@ export function syncSettingsUI(settings) {
 
 // --- SHOP UI ---
 
-export function showShop(state, onSelect, onBuy) {
-    if (shopScreen) {
-        shopScreen.classList.remove('hidden');
-        updateStarsUI(state.stars);
-        renderShop(state, onSelect, onBuy);
-    }
+export function showShop(state, onSelect, onBuy, onCaseOpen) {
+    if (!shopScreen) return;
+    shopScreen.classList.remove('hidden');
+    updateStarsUI(state.stars);
+    renderShop(state, onSelect, onBuy);
+    renderCaseTab(state, onSelect, onCaseOpen);
+    _initShopTabs(state, onSelect, onBuy, onCaseOpen);
+    // Всегда начинаем на вкладке Скины
+    _switchTab('skins');
 }
 
 export function hideShop() {
     if (shopScreen) shopScreen.classList.add('hidden');
+}
+
+function _switchTab(tab) {
+    if (tab === 'skins') {
+        tabSkins && tabSkins.classList.add('shop-tab--active');
+        tabCase && tabCase.classList.remove('shop-tab--active');
+        shopSkinsContent && shopSkinsContent.classList.remove('hidden');
+        shopCaseContent && shopCaseContent.classList.add('hidden');
+    } else {
+        tabCase && tabCase.classList.add('shop-tab--active');
+        tabSkins && tabSkins.classList.remove('shop-tab--active');
+        shopCaseContent && shopCaseContent.classList.remove('hidden');
+        shopSkinsContent && shopSkinsContent.classList.add('hidden');
+    }
+}
+
+function _initShopTabs(state, onSelect, onBuy, onCaseOpen) {
+    if (!tabSkins || !tabCase) return;
+    // Клонируем, чтобы убрать старые listener'ы
+    const newTabSkins = tabSkins.cloneNode(true);
+    const newTabCase  = tabCase.cloneNode(true);
+    tabSkins.parentNode.replaceChild(newTabSkins, tabSkins);
+    tabCase.parentNode.replaceChild(newTabCase, tabCase);
+    // Переназначаем ссылки в замыкании
+    newTabSkins.addEventListener('click', () => _switchTab('skins'));
+    newTabCase.addEventListener('click', () => _switchTab('case'));
 }
 
 export function renderShop(state, onSelectCallback, onBuyCallback) {
@@ -179,6 +223,155 @@ export function renderShop(state, onSelectCallback, onBuyCallback) {
     });
 }
 
+
+// --- CASE TAB ---
+
+export function renderCaseTab(state, onSelectCallback, onCaseOpenCallback) {
+    if (!caseOwnedGrid || !caseOpenBtn) return;
+    const caseUnlocked = state.shop.caseUnlockedSkins || [];
+    const activeSkin = state.shop.activeSkin;
+
+    // Отрисовываем выбитые скины
+    caseOwnedGrid.innerHTML = '';
+    caseUnlocked.forEach(skinId => {
+        const skin = CASE_SKINS.find(s => s.id === skinId);
+        if (!skin) return;
+        const card = document.createElement('div');
+        card.className = 'case-owned-card' + (skinId === activeSkin ? ' case-owned-card--active' : '');
+        const cv = document.createElement('canvas');
+        cv.width = 52; cv.height = 52;
+        drawSkin(cv.getContext('2d'), 26, 26, 20, 0, skinId);
+        card.appendChild(cv);
+        let ts = 0;
+        card.addEventListener('touchstart', e => { ts = e.touches[0].clientX; }, { passive: true });
+        card.addEventListener('touchend', e => {
+            if (Math.abs(e.changedTouches[0].clientX - ts) < 10 && onSelectCallback) {
+                e.preventDefault();
+                onSelectCallback(skinId);
+                renderCaseTab(state, onSelectCallback, onCaseOpenCallback);
+            }
+        });
+        card.addEventListener('click', () => {
+            if (onSelectCallback) onSelectCallback(skinId);
+            renderCaseTab(state, onSelectCallback, onCaseOpenCallback);
+        });
+        caseOwnedGrid.appendChild(card);
+    });
+
+    // Кнопка открыть
+    const newBtn = caseOpenBtn.cloneNode(true);
+    caseOpenBtn.parentNode.replaceChild(newBtn, caseOpenBtn);
+    newBtn.disabled = caseIsSpinning || state.stars < CASE_COST;
+    newBtn.textContent = `КРУТИТЬ ЗА ${CASE_COST} ⭐`;
+
+    newBtn.addEventListener('click', () => {
+        if (caseIsSpinning) return;
+        if (state.stars < CASE_COST) {
+            newBtn.classList.add('btn-case-open--shake');
+            newBtn.addEventListener('animationend', () => newBtn.classList.remove('btn-case-open--shake'), { once: true });
+            return;
+        }
+        if (onCaseOpenCallback) onCaseOpenCallback();
+    });
+}
+
+// Слот-машина
+export function animateCaseReel(winner, onDone) {
+    if (!caseReelStrip) return;
+    caseIsSpinning = true;
+
+    const CARD_W = 80;
+    const GAP = 8;
+    const STEP = CARD_W + GAP;
+    const TOTAL_CARDS = 52;
+    const WINNER_IDX = 44; // позиция победителя
+
+    // Генерируем набор карточек: случайные + победитель на WINNER_IDX
+    const reelSkins = [];
+    for (let i = 0; i < TOTAL_CARDS; i++) {
+        if (i === WINNER_IDX) {
+            reelSkins.push(winner);
+        } else {
+            reelSkins.push(CASE_SKINS[Math.floor(Math.random() * CASE_SKINS.length)]);
+        }
+    }
+
+    // Строим DOM ленты
+    caseReelStrip.innerHTML = '';
+    reelSkins.forEach(skin => {
+        const card = document.createElement('div');
+        card.className = 'case-reel-card';
+        card.style.borderColor = skin.rarity.color + '55';
+        const cv = document.createElement('canvas');
+        cv.width = 72; cv.height = 72;
+        drawSkin(cv.getContext('2d'), 36, 36, 30, 0, skin.id);
+        card.appendChild(cv);
+        caseReelStrip.appendChild(card);
+    });
+
+    // Вычисляем смещение: победитель должен оказаться по центру вьюпорта
+    const viewport = caseReelStrip.parentElement;
+    const viewportW = viewport.offsetWidth;
+    const centerOffset = Math.floor(viewportW / 2) - Math.floor(CARD_W / 2);
+    const targetX = -(WINNER_IDX * STEP - centerOffset);
+
+    // Easing: быстрый старт → плавное торможение
+    const DURATION = 3800;
+    let startTime = null;
+    caseReelStrip.style.transform = 'translateX(0px)';
+
+    function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+
+    function animate(ts) {
+        if (!startTime) startTime = ts;
+        const elapsed = ts - startTime;
+        const progress = Math.min(elapsed / DURATION, 1);
+        const eased = easeOutQuint(progress);
+        const currentX = targetX * eased;
+        caseReelStrip.style.transform = `translateX(${currentX}px)`;
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            caseReelStrip.style.transform = `translateX(${targetX}px)`;
+            // Подсвечиваем победителя
+            const winCard = caseReelStrip.children[WINNER_IDX];
+            if (winCard) {
+                winCard.classList.add('case-reel-card--winner');
+                winCard.style.borderColor = winner.rarity.color;
+            }
+            caseIsSpinning = false;
+            setTimeout(() => onDone && onDone(), 400);
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+export function showCaseResult(skin, isNew, onClose) {
+    if (!caseResultPopup) return;
+    caseResultPopup.classList.remove('hidden');
+
+    caseResultRarity.textContent = skin.rarity.label;
+    caseResultRarity.style.color = skin.rarity.color;
+    if (skin.rarity.glow) {
+        caseResultRarity.style.textShadow = `0 0 10px ${skin.rarity.glow}`;
+    } else {
+        caseResultRarity.style.textShadow = 'none';
+    }
+    caseResultName.textContent = skin.name;
+    caseResultBonus.textContent = isNew ? '' : '+5 ⭐ (дубликат)';
+
+    const ctx = caseResultCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 120, 120);
+    drawSkin(ctx, 60, 60, 50, 0, skin.id);
+
+    const newBtn = caseResultCloseBtn.cloneNode(true);
+    caseResultCloseBtn.parentNode.replaceChild(newBtn, caseResultCloseBtn);
+    newBtn.addEventListener('click', () => {
+        caseResultPopup.classList.add('hidden');
+        onClose && onClose();
+    });
+}
 
 // -------------------
 

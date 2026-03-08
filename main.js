@@ -96,10 +96,13 @@ function goToMenu() {
 
 function openShop() {
     const state = gameState || GameState.createMenuState();
+
     const onSelect = (skinId) => {
         GameState.setActiveSkin(state, skinId);
         UI.renderShop(state, onSelect, onBuy);
+        UI.renderCaseTab(state, onSelect, onCaseOpen);
     };
+
     const onBuy = (skinId, price) => {
         if (!GameState.spendStars(state, price)) return;
         GameState.unlockSkin(state, skinId);
@@ -107,7 +110,45 @@ function openShop() {
         UI.updateStarsUI(state.stars);
         UI.renderShop(state, onSelect, onBuy);
     };
-    UI.showShop(state, onSelect, onBuy);
+
+    const onCaseOpen = () => {
+        // 1. Списываем звёзды
+        if (!GameState.spendStars(state, Config.CASE_COST)) return;
+        UI.updateStarsUI(state.stars);
+
+        // 2. Определяем победителя
+        const winner = Config.CASE_SKINS[_pickCaseSkinIndex()];
+
+        // 3. Анимируем ленту
+        UI.animateCaseReel(winner, () => {
+            // 4. Разблокируем скин (или дубликат)
+            const isNew = GameState.unlockCaseSkin(state, winner.id);
+            if (!isNew) {
+                // Дубликат — возвращаем 5 звёзд
+                GameState.addStars(state, 5);
+                UI.updateStarsUI(state.stars);
+            }
+
+            // 5. Показываем попап результата
+            UI.showCaseResult(winner, isNew, () => {
+                // После закрытия — обновляем UI кейса
+                UI.renderCaseTab(state, onSelect, onCaseOpen);
+                UI.updateStarsUI(state.stars);
+            });
+        });
+    };
+
+    UI.showShop(state, onSelect, onBuy, onCaseOpen);
+}
+
+function _pickCaseSkinIndex() {
+    const total = Config.CASE_SKINS.reduce((s, sk) => s + sk.weight, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < Config.CASE_SKINS.length; i++) {
+        r -= Config.CASE_SKINS[i].weight;
+        if (r <= 0) return i;
+    }
+    return 0;
 }
 
 function closeShop() {

@@ -67,10 +67,49 @@
                 <div class="shop-stars">
                     <span aria-hidden="true">⭐</span> <span id="shop-stars">0</span>
                 </div>
-                <div class="shop-grid">
-                    <!-- Карточки генерируются в UI.js -->
+
+                <!-- Табы -->
+                <div class="shop-tabs">
+                    <button class="shop-tab shop-tab--active" id="tabSkins">Скины</button>
+                    <button class="shop-tab" id="tabCase">Кейс</button>
                 </div>
-                <button id="shopBackBtn" class="btn-secondary" style="margin-top: 30px;">Назад</button>
+
+                <!-- Контент: Скины -->
+                <div id="shopSkinsContent">
+                    <div class="shop-grid">
+                        <!-- Карточки генерируются в UI.js -->
+                    </div>
+                </div>
+
+                <!-- Контент: Кейс -->
+                <div id="shopCaseContent" class="hidden">
+                    <div class="case-reel-wrapper">
+                        <div class="case-reel-viewport">
+                            <div class="case-reel-strip" id="caseReelStrip"></div>
+                        </div>
+                        <div class="case-reel-marker"></div>
+                    </div>
+                    <button id="caseOpenBtn" class="btn-case-open">КРУТИТЬ ЗА 20 ⭐</button>
+                    <div class="case-owned-section">
+                        <div class="case-owned-label">Выбито из кейса:</div>
+                        <div class="case-owned-grid" id="caseOwnedGrid"></div>
+                    </div>
+                </div>
+
+                <button id="shopBackBtn" class="btn-secondary" style="margin-top: 16px;">Назад</button>
+            </div>
+        </div>
+
+        <!-- ПОПАП РЕЗУЛЬТАТА КЕЙСА -->
+        <div id="caseResultPopup" class="hidden">
+            <div class="case-result-overlay">
+                <div class="case-result-card">
+                    <div class="case-result-rarity" id="caseResultRarity">Редкий</div>
+                    <canvas class="case-result-canvas" id="caseResultCanvas" width="120" height="120"></canvas>
+                    <div class="case-result-name" id="caseResultName">Название</div>
+                    <div class="case-result-bonus" id="caseResultBonus"></div>
+                    <button class="btn-neon-primary" id="caseResultCloseBtn">Продолжить</button>
+                </div>
             </div>
         </div>
 

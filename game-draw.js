@@ -377,6 +377,16 @@ export function drawSkin(ctx, x, y, r, angle, skinId) {
             case 'golden':
                 drawGolden(ctx, r);
                 break;
+            case 'case_cherry':     drawCaseCherry(ctx, r);     break;
+            case 'case_moon':       drawCaseMoon(ctx, r);       break;
+            case 'case_wood':       drawCaseWood(ctx, r);       break;
+            case 'case_slime':      drawCaseSlime(ctx, r);      break;
+            case 'case_strawberry': drawCaseStrawberry(ctx, r); break;
+            case 'case_earth':      drawCaseEarth(ctx, r);      break;
+            case 'case_prism':      drawCasePrism(ctx, r);      break;
+            case 'case_demon':      drawCaseDemon(ctx, r);      break;
+            case 'case_portal':     drawCasePortal(ctx, r);     break;
+            case 'case_dragon':     drawCaseDragon(ctx, r);     break;
             case 'basketball':
             default:
                 drawBasketball(ctx, r);
@@ -385,6 +395,501 @@ export function drawSkin(ctx, x, y, r, angle, skinId) {
     }
 
     ctx.restore();
+}
+
+// --- CASE SKIN DRAWING FUNCTIONS ---
+
+function drawCaseCherry(ctx, r) {
+    // === ВИШНЯ — глянцевый тёмно-красный шар ===
+    const gradient = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.05, 0, 0, r);
+    gradient.addColorStop(0, '#FF6688');
+    gradient.addColorStop(0.35, '#CC1133');
+    gradient.addColorStop(0.75, '#880022');
+    gradient.addColorStop(1, '#330008');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Черешок
+    ctx.strokeStyle = '#2A5500';
+    ctx.lineWidth = r * 0.07;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(r * 0.1, -r * 0.85);
+    ctx.quadraticCurveTo(r * 0.5, -r * 1.3, r * 0.6, -r * 0.9);
+    ctx.stroke();
+
+    // Листик
+    ctx.fillStyle = '#3A7700';
+    ctx.beginPath();
+    ctx.ellipse(r * 0.55, -r * 1.05, r * 0.18, r * 0.09, -0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Блик
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.32, r * 0.2, r * 0.09, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(r * 0.18, r * 0.22, r * 0.1, r * 0.05, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(180,0,30,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawCaseMoon(ctx, r) {
+    // === ЛУНА — серый шар с кратерами ===
+    const gradient = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.1, 0, 0, r);
+    gradient.addColorStop(0, '#DDDDDD');
+    gradient.addColorStop(0.5, '#999999');
+    gradient.addColorStop(1, '#444444');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Кратеры
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    const craters = [
+        [-r*0.35, r*0.3, r*0.16], [r*0.3, r*0.2, r*0.12],
+        [-r*0.5, -r*0.3, r*0.1], [r*0.2, -r*0.5, r*0.09],
+        [r*0.5, -r*0.2, r*0.08], [-r*0.1, r*0.55, r*0.07],
+    ];
+    craters.forEach(([cx, cy, cr]) => {
+        const cg = ctx.createRadialGradient(cx - cr*0.3, cy - cr*0.3, 0, cx, cy, cr);
+        cg.addColorStop(0, 'rgba(80,80,80,0.7)');
+        cg.addColorStop(0.7, 'rgba(60,60,60,0.5)');
+        cg.addColorStop(1, 'rgba(160,160,160,0.3)');
+        ctx.fillStyle = cg;
+        ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.3, -r * 0.32, r * 0.18, r * 0.08, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(100,100,100,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawCaseWood(ctx, r) {
+    // === ДЕРЕВО — срез дерева с кольцами ===
+    const gradient = ctx.createRadialGradient(0, 0, r * 0.05, 0, 0, r);
+    gradient.addColorStop(0, '#D28A4A');
+    gradient.addColorStop(0.3, '#B86E2E');
+    gradient.addColorStop(0.6, '#8B4A1A');
+    gradient.addColorStop(1, '#4A2008');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Годовые кольца
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    const rings = [0.18, 0.32, 0.47, 0.62, 0.76, 0.88];
+    rings.forEach(ratio => {
+        ctx.strokeStyle = `rgba(60,25,5,${0.25 + ratio * 0.2})`;
+        ctx.lineWidth = r * 0.025;
+        ctx.beginPath();
+        ctx.ellipse(r * 0.04, r * 0.03, r * ratio, r * ratio * 0.92, 0.15, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+    // Радиальные трещинки
+    ctx.strokeStyle = 'rgba(60,25,5,0.2)';
+    ctx.lineWidth = r * 0.018;
+    [[0.1, 0.9, 0.2, 0.4], [-0.15, 0.85, -0.4, 0.3], [0.05, -0.9, 0.1, -0.4]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath(); ctx.moveTo(r*x1, r*y1); ctx.lineTo(r*x2, r*y2); ctx.stroke();
+    });
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,220,160,0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.3, r * 0.18, r * 0.08, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(80,35,10,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawCaseSlime(ctx, r) {
+    // === СЛИЗЬ — полупрозрачный зелёный с пузырями ===
+    const gradient = ctx.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
+    gradient.addColorStop(0, '#AAFFAA');
+    gradient.addColorStop(0.4, '#44DD44');
+    gradient.addColorStop(0.75, '#118811');
+    gradient.addColorStop(1, '#044404');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Внутреннее свечение
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    const innerGlow = ctx.createRadialGradient(r*0.15, r*0.1, 0, r*0.15, r*0.1, r*0.45);
+    innerGlow.addColorStop(0, 'rgba(150,255,150,0.35)');
+    innerGlow.addColorStop(1, 'rgba(0,200,0,0)');
+    ctx.fillStyle = innerGlow;
+    ctx.fillRect(-r, -r, r*2, r*2);
+
+    // Пузыри
+    ctx.globalCompositeOperation = 'source-over';
+    [[r*0.3, -r*0.25, r*0.12], [-r*0.35, r*0.3, r*0.09], [r*0.45, r*0.35, r*0.07], [-r*0.15, -r*0.5, r*0.06]].forEach(([bx, by, br]) => {
+        ctx.strokeStyle = 'rgba(200,255,200,0.6)';
+        ctx.lineWidth = r * 0.03;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath(); ctx.arc(bx - br*0.4, by - br*0.4, br*0.2, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.32, r * 0.18, r * 0.08, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(0,180,0,0.7)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0,255,0,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+function drawCaseStrawberry(ctx, r) {
+    // === КЛУБНИКА — красная с семечками ===
+    const gradient = ctx.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.05, 0, 0, r);
+    gradient.addColorStop(0, '#FF8899');
+    gradient.addColorStop(0.4, '#EE1133');
+    gradient.addColorStop(0.8, '#AA0022');
+    gradient.addColorStop(1, '#550011');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Семечки
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    const seeds = [
+        [0, -r*0.4], [-r*0.35, -r*0.15], [r*0.35, -r*0.1],
+        [-r*0.2, r*0.25], [r*0.25, r*0.2], [0, r*0.45],
+        [-r*0.45, r*0.1], [r*0.45, r*0.05], [-r*0.1, -r*0.6],
+    ];
+    seeds.forEach(([sx, sy]) => {
+        ctx.fillStyle = '#FFEE88';
+        ctx.strokeStyle = '#CC8800';
+        ctx.lineWidth = r * 0.015;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r * 0.055, r * 0.038, 0.3, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+    });
+    ctx.restore();
+
+    // Листики сверху
+    ctx.fillStyle = '#2A7700';
+    [[-0.25, -1.0, -0.5], [0, -1.05, 0], [0.25, -1.0, 0.5]].forEach(([lx, ly, rot]) => {
+        ctx.save();
+        ctx.translate(r * lx, r * ly);
+        ctx.rotate(rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.12, r * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.27, -r * 0.3, r * 0.19, r * 0.08, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(180,0,30,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawCaseEarth(ctx, r) {
+    // === ЗЕМЛЯ — голубая планета с материками ===
+    const gradient = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.1, 0, 0, r);
+    gradient.addColorStop(0, '#88CCFF');
+    gradient.addColorStop(0.4, '#2277DD');
+    gradient.addColorStop(0.8, '#0044AA');
+    gradient.addColorStop(1, '#001840');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Материки
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = '#3A9922';
+    // Северный материк
+    ctx.beginPath();
+    ctx.moveTo(-r*0.5, -r*0.5);
+    ctx.bezierCurveTo(-r*0.2, -r*0.65, r*0.3, -r*0.55, r*0.4, -r*0.2);
+    ctx.bezierCurveTo(r*0.5, r*0.05, r*0.2, r*0.1, 0, -r*0.05);
+    ctx.bezierCurveTo(-r*0.25, -r*0.15, -r*0.45, -r*0.3, -r*0.5, -r*0.5);
+    ctx.fill();
+    // Южный материк
+    ctx.beginPath();
+    ctx.moveTo(-r*0.3, r*0.25);
+    ctx.bezierCurveTo(-r*0.1, r*0.15, r*0.25, r*0.2, r*0.35, r*0.45);
+    ctx.bezierCurveTo(r*0.15, r*0.6, -r*0.2, r*0.55, -r*0.3, r*0.25);
+    ctx.fill();
+    // Атмосфера
+    ctx.globalAlpha = 0.2;
+    const atmo = ctx.createRadialGradient(0, 0, r*0.85, 0, 0, r);
+    atmo.addColorStop(0, 'rgba(100,180,255,0)');
+    atmo.addColorStop(1, 'rgba(100,200,255,0.8)');
+    ctx.fillStyle = atmo;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.32, r * 0.18, r * 0.08, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(50,150,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(50,150,255,0.6)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+function drawCasePrism(ctx, r) {
+    // === ПРИЗМА — шар со всеми цветами радуги ===
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+
+    // Тёмная основа
+    ctx.fillStyle = '#111122';
+    ctx.fillRect(-r, -r, r*2, r*2);
+
+    // Радужные полосы
+    const colors = ['#FF0044', '#FF7700', '#FFEE00', '#44FF44', '#00CCFF', '#8844FF', '#FF44FF'];
+    const stripeW = (r * 2) / colors.length;
+    colors.forEach((c, i) => {
+        const grd = ctx.createLinearGradient(-r + i*stripeW, 0, -r + (i+1)*stripeW, 0);
+        grd.addColorStop(0, c);
+        grd.addColorStop(1, colors[(i+1) % colors.length]);
+        ctx.fillStyle = grd;
+        ctx.fillRect(-r + i * stripeW, -r, stripeW + 1, r * 2);
+    });
+
+    // Стекловидный блик сверху
+    const glass = ctx.createLinearGradient(0, -r, 0, 0);
+    glass.addColorStop(0, 'rgba(255,255,255,0.55)');
+    glass.addColorStop(0.4, 'rgba(255,255,255,0.1)');
+    glass.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glass;
+    ctx.fillRect(-r, -r, r*2, r);
+
+    ctx.restore();
+
+    // Блик
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.28, -r * 0.32, r * 0.22, r * 0.09, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+}
+
+function drawCaseDemon(ctx, r) {
+    // === ДЕМОН — тёмно-красный с трещинами и горящим глазом ===
+    const gradient = ctx.createRadialGradient(0, -r*0.1, r*0.05, 0, 0, r);
+    gradient.addColorStop(0, '#CC2200');
+    gradient.addColorStop(0.4, '#880000');
+    gradient.addColorStop(0.8, '#440000');
+    gradient.addColorStop(1, '#110000');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Огненные трещины
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    const demonCracks = [
+        [[r*0.05, r*0.15], [r*0.35, -r*0.25], [r*0.6, -r*0.55]],
+        [[r*0.05, r*0.15], [-r*0.3, -r*0.2], [-r*0.55, -r*0.5]],
+        [[r*0.05, r*0.15], [r*0.15, r*0.5], [r*0.05, r*0.8]],
+        [[r*0.05, r*0.15], [-r*0.4, r*0.4], [-r*0.6, r*0.6]],
+    ];
+    demonCracks.forEach(pts => {
+        ctx.strokeStyle = 'rgba(255,120,0,0.8)';
+        ctx.lineWidth = r * 0.04;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+        pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,220,50,0.5)';
+        ctx.lineWidth = r * 0.015;
+        ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+        pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // Горящий глаз в центре
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, r*0.1, r*0.28, 0, Math.PI*2); ctx.clip();
+    const eyeGrad = ctx.createRadialGradient(0, r*0.1, 0, 0, r*0.1, r*0.28);
+    eyeGrad.addColorStop(0, '#FFFFFF');
+    eyeGrad.addColorStop(0.2, '#FFEE00');
+    eyeGrad.addColorStop(0.5, '#FF6600');
+    eyeGrad.addColorStop(1, '#CC0000');
+    ctx.fillStyle = eyeGrad;
+    ctx.beginPath(); ctx.arc(0, r*0.1, r*0.28, 0, Math.PI*2); ctx.fill();
+    // Зрачок
+    ctx.fillStyle = '#000000';
+    ctx.beginPath(); ctx.ellipse(0, r*0.1, r*0.07, r*0.14, 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(200,0,0,0.8)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(255,50,0,0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+function drawCasePortal(ctx, r) {
+    // === ПОРТАЛ — чёрная дыра с цветным вихрем ===
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+
+    // Чёрная основа
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-r, -r, r*2, r*2);
+
+    // Вихрь — концентрические кольца с цветами
+    ctx.globalCompositeOperation = 'lighter';
+    const portalColors = [
+        [r*0.95, 'rgba(120,0,255,0.5)'],
+        [r*0.82, 'rgba(0,100,255,0.5)'],
+        [r*0.68, 'rgba(0,200,255,0.5)'],
+        [r*0.54, 'rgba(100,0,255,0.4)'],
+        [r*0.4,  'rgba(200,0,255,0.4)'],
+        [r*0.28, 'rgba(255,100,255,0.35)'],
+    ];
+    portalColors.forEach(([pr, color]) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = r * 0.1;
+        ctx.beginPath(); ctx.arc(0, 0, pr, 0, Math.PI*2); ctx.stroke();
+    });
+
+    // Спиральные полосы
+    ctx.strokeStyle = 'rgba(160,80,255,0.4)';
+    ctx.lineWidth = r * 0.07;
+    ctx.lineCap = 'round';
+    for (let arm = 0; arm < 3; arm++) {
+        const off = arm * Math.PI * 2 / 3;
+        ctx.beginPath();
+        let first = true;
+        for (let t = 0; t <= 1; t += 0.03) {
+            const angle = off + t * Math.PI * 2.5;
+            const dist = t * r * 0.9;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist;
+            if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Тёмное ядро
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, r*0.25);
+    core.addColorStop(0, 'rgba(0,0,0,1)');
+    core.addColorStop(0.6, 'rgba(0,0,20,0.9)');
+    core.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(0, 0, r*0.25, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(120,0,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(150,0,255,0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+function drawCaseDragon(ctx, r) {
+    // === ДРАКОН — тёмный с чешуёй и светящимися глазами ===
+    const gradient = ctx.createRadialGradient(-r*0.15, -r*0.2, r*0.05, 0, 0, r);
+    gradient.addColorStop(0, '#5A2800');
+    gradient.addColorStop(0.4, '#3A1500');
+    gradient.addColorStop(0.8, '#1E0800');
+    gradient.addColorStop(1, '#0A0200');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Чешуя (сетка из дуг)
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.strokeStyle = 'rgba(180,80,0,0.35)';
+    ctx.lineWidth = r * 0.025;
+    const scaleSize = r * 0.22;
+    for (let row = -5; row <= 5; row++) {
+        for (let col = -5; col <= 5; col++) {
+            const sx = col * scaleSize * 0.9 + (row % 2 === 0 ? scaleSize * 0.45 : 0);
+            const sy = row * scaleSize * 0.7;
+            if (Math.sqrt(sx*sx + sy*sy) < r * 1.1) {
+                ctx.beginPath();
+                ctx.arc(sx, sy + scaleSize * 0.3, scaleSize * 0.5, Math.PI * 1.1, Math.PI * 1.9);
+                ctx.stroke();
+            }
+        }
+    }
+    ctx.restore();
+
+    // Светящиеся глаза
+    const eyePositions = [[-r*0.28, -r*0.2], [r*0.28, -r*0.2]];
+    eyePositions.forEach(([ex, ey]) => {
+        // Свечение
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const eyeGlow = ctx.createRadialGradient(ex, ey, 0, ex, ey, r*0.2);
+        eyeGlow.addColorStop(0, 'rgba(255,140,0,0.7)');
+        eyeGlow.addColorStop(1, 'rgba(255,60,0,0)');
+        ctx.fillStyle = eyeGlow;
+        ctx.beginPath(); ctx.arc(ex, ey, r*0.2, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+        // Белок
+        ctx.fillStyle = '#FF8800';
+        ctx.beginPath(); ctx.ellipse(ex, ey, r*0.1, r*0.07, 0, 0, Math.PI*2); ctx.fill();
+        // Зрачок
+        ctx.fillStyle = '#000000';
+        ctx.beginPath(); ctx.ellipse(ex, ey, r*0.04, r*0.07, 0, 0, Math.PI*2); ctx.fill();
+        // Блик
+        ctx.fillStyle = 'rgba(255,255,200,0.8)';
+        ctx.beginPath(); ctx.arc(ex - r*0.03, ey - r*0.03, r*0.025, 0, Math.PI*2); ctx.fill();
+    });
+
+    // Ноздри
+    ctx.fillStyle = '#FF5500';
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    [[-r*0.1, r*0.05], [r*0.1, r*0.05]].forEach(([nx, ny]) => {
+        const ng = ctx.createRadialGradient(nx, ny, 0, nx, ny, r*0.1);
+        ng.addColorStop(0, 'rgba(255,100,0,0.6)');
+        ng.addColorStop(1, 'rgba(255,50,0,0)');
+        ctx.fillStyle = ng;
+        ctx.beginPath(); ctx.arc(nx, ny, r*0.1, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(180,60,0,0.7)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(255,80,0,0.8)';
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 function hexToRgba(hex, alpha) {
