@@ -15,30 +15,30 @@ export const SKINS = [
         trailColor: '#FF7A2E',
         trailAccent: '#FFD28A'
     },
-    { 
-        id: 'watermelon', 
-        name: 'Арбуз', 
-        price: 0, 
-        trailColor: '#FF2D55',
-        trailAccent: '#6BFF7A'
+    {
+        id: 'watermelon',
+        name: 'Жемчуг',
+        price: 0,
+        trailColor: '#DDB8FF',
+        trailAccent: '#FFFFFF'
     },
-    { 
-        id: 'zombie', 
-        name: 'Зомби', 
-        price: 0, 
-        trailColor: '#40E6C5',
-        trailAccent: '#B6FF6B'
+    {
+        id: 'zombie',
+        name: 'Мрамор',
+        price: 0,
+        trailColor: '#4AABFF',
+        trailAccent: '#B0DDFF'
     },
-    { 
-        id: 'cosmic', 
-        name: 'Космос', 
-        price: 1, 
-        trailColor: '#8B5BFF',
-        trailAccent: '#4AD7FF'
+    {
+        id: 'cosmic',
+        name: 'Плазма',
+        price: 1,
+        trailColor: '#4499FF',
+        trailAccent: '#CCEEFF'
     },
-    { id: 'neon', name: 'Неон', price: 10, trailColor: '#00F5FF', trailAccent: '#FF3DFF' },
-    { id: 'galaxy', name: 'Галактика', price: 20, trailColor: '#B000FF', trailAccent: '#2ED6FF' },
-    { id: 'golden', name: 'Золотой', price: 50, trailColor: '#FFD34D', trailAccent: '#FF9F1A' }
+    { id: 'neon', name: 'Лава', price: 10, trailColor: '#FF5500', trailAccent: '#FFB340' },
+    { id: 'galaxy', name: 'Туманность', price: 20, trailColor: '#CC44FF', trailAccent: '#FF99FF' },
+    { id: 'golden', name: 'Кристалл', price: 50, trailColor: '#00CCDD', trailAccent: '#AAFFEE' }
 ];
 
 // Физика

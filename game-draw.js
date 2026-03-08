@@ -450,107 +450,358 @@ function drawBasketball(ctx, r) {
 }
 
 function drawWatermelon(ctx, r) {
+    // === ЖЕМЧУГ (Pearl) ===
+    const gradient = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.05, 0, 0, r);
+    gradient.addColorStop(0, '#FFFFFF');
+    gradient.addColorStop(0.2, '#F5EEFF');
+    gradient.addColorStop(0.6, '#CCAAF0');
+    gradient.addColorStop(1, '#8860C0');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Iridescent shimmer
     ctx.save();
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); 
-    const base = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.2, 0, 0, r);
-    base.addColorStop(0, '#B6FF9E');
-    base.addColorStop(1, '#2BCB6B');
-    ctx.fillStyle = base; ctx.fill(); ctx.clip();
-    ctx.fillStyle = '#0F6B2C'; 
-    const numStripes = 5; const stripeWidth = r * 0.4; const step = (r * 2.5) / numStripes;
-    for (let i = 0; i < numStripes; i++) {
-        let startX = -r * 1.2 + (step * i);
-        ctx.beginPath(); ctx.moveTo(startX, -r);
-        for (let y = -r; y <= r; y += 5) {
-            let wobble = Math.sin(y * 0.05 + i) * (r * 0.15); 
-            let sphereBulge = Math.cos(y / r * 1.5) * (r * 0.1);
-            ctx.lineTo(startX + wobble + sphereBulge, y);
-        }
-        for (let y = r; y >= -r; y -= 5) {
-            let wobble = Math.sin(y * 0.05 + i) * (r * 0.15);
-            let sphereBulge = Math.cos(y / r * 1.5) * (r * 0.1);
-            ctx.lineTo(startX + stripeWidth + wobble + sphereBulge, y);
-        }
-        ctx.fill();
-    }
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalAlpha = 0.2;
+    const shim = ctx.createLinearGradient(-r * 0.8, -r * 0.4, r * 0.8, r * 0.4);
+    shim.addColorStop(0, '#FF88FF');
+    shim.addColorStop(0.3, '#88FFFF');
+    shim.addColorStop(0.65, '#FFFFAA');
+    shim.addColorStop(1, '#AAFFDD');
+    ctx.fillStyle = shim;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
     ctx.restore();
-    ctx.strokeStyle = '#0F6B2C'; ctx.lineWidth = 1;
+
+    // Main elongated highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.25, -r * 0.30, r * 0.22, r * 0.09, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Secondary soft highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(r * 0.2, r * 0.25, r * 0.13, r * 0.06, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(190,150,230,0.5)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawZombie(ctx, r) {
-    const gradient = ctx.createRadialGradient(-r/3, -r/3, r/4, 0, 0, r);
-    gradient.addColorStop(0, '#B8FFD9'); gradient.addColorStop(1, '#42D9B8'); 
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = gradient; ctx.fill();
-    function drawStaticEye(cx, cy, radius) {
-        ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#008A7A'; ctx.lineWidth = 1; ctx.stroke();
-        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(cx + radius*0.3, cy, radius * 0.3, 0, Math.PI*2); ctx.fill();
-    }
-    drawStaticEye(-r * 0.35, -r * 0.2, r * 0.32);
-    drawStaticEye(r * 0.4, -r * 0.25, r * 0.22);
-    ctx.strokeStyle = '#3E1E16'; ctx.lineWidth = r * 0.08; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.4); ctx.quadraticCurveTo(0, r * 0.6, r * 0.4, r * 0.35); ctx.stroke();
-    ctx.lineWidth = r * 0.05; const stitchY = r * 0.45; const stitchX = [-r * 0.2, 0, r * 0.2];
-    stitchX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, stitchY - (r*0.1)); ctx.lineTo(x, stitchY + (r*0.1)); ctx.stroke(); });
-    ctx.strokeStyle = '#008A7A'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.4, -r * 0.7); ctx.stroke();
+    // === МРАМОР (Blue Marble) ===
+    const gradient = ctx.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.08, 0, 0, r);
+    gradient.addColorStop(0, '#88CCFF');
+    gradient.addColorStop(0.4, '#3388DD');
+    gradient.addColorStop(0.75, '#1155AA');
+    gradient.addColorStop(1, '#061840');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = gradient; ctx.fill();
+
+    // Marble veins
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+
+    ctx.strokeStyle = 'rgba(200,230,255,0.65)';
+    ctx.lineWidth = r * 0.07;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.7, -r * 0.55);
+    ctx.bezierCurveTo(-r * 0.2, -r * 0.1, r * 0.1, r * 0.2, r * 0.65, r * 0.55);
+    ctx.stroke();
+
+    ctx.lineWidth = r * 0.04;
+    ctx.strokeStyle = 'rgba(200,230,255,0.45)';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.2, -r * 0.7);
+    ctx.bezierCurveTo(r * 0.1, -r * 0.3, r * 0.3, 0, r * 0.55, -r * 0.4);
+    ctx.stroke();
+
+    ctx.lineWidth = r * 0.025;
+    ctx.strokeStyle = 'rgba(180,215,255,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.5, r * 0.2);
+    ctx.bezierCurveTo(-r * 0.1, r * 0.35, r * 0.2, r * 0.5, r * 0.5, r * 0.65);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.6, -r * 0.1);
+    ctx.bezierCurveTo(-r * 0.3, -r * 0.3, 0, r * 0.1, -r * 0.1, r * 0.5);
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(100,180,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
 }
 
 function drawCosmic(ctx, r) {
-    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#B36BFF');
-    gradient.addColorStop(0.6, '#7A4CFF');
-    gradient.addColorStop(1, '#2D5BFF');
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    // === ПЛАЗМА (Plasma Ball) ===
+    const bg = ctx.createRadialGradient(0, 0, r * 0.05, 0, 0, r);
+    bg.addColorStop(0, '#BBDDFF');
+    bg.addColorStop(0.25, '#4488FF');
+    bg.addColorStop(0.6, '#1830A0');
+    bg.addColorStop(1, '#030318');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = bg; ctx.fill();
+
+    // Lightning arcs from center (fixed positions)
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+
+    const arcs = [
+        { pts: [[0, 0], [-r*0.25, -r*0.2], [-r*0.55, -r*0.5]], color: 'rgba(100,200,255,0.9)' },
+        { pts: [[0, 0], [r*0.3, -r*0.15], [r*0.6, -r*0.45]], color: 'rgba(140,210,255,0.8)' },
+        { pts: [[0, 0], [r*0.15, r*0.3], [r*0.35, r*0.65]], color: 'rgba(120,200,255,0.75)' },
+        { pts: [[0, 0], [-r*0.35, r*0.2], [-r*0.6, r*0.4]], color: 'rgba(100,190,255,0.7)' },
+        { pts: [[0, 0], [r*0.05, -r*0.4], [-r*0.15, -r*0.7]], color: 'rgba(160,220,255,0.6)' },
+        { pts: [[0, 0], [r*0.2, r*0.1], [r*0.55, r*0.1]], color: 'rgba(180,230,255,0.5)', thin: true },
+        { pts: [[0, 0], [-r*0.1, r*0.35], [-r*0.3, r*0.65]], color: 'rgba(160,220,255,0.45)', thin: true },
+    ];
+
+    arcs.forEach(arc => {
+        ctx.strokeStyle = arc.color;
+        ctx.lineWidth = arc.thin ? r * 0.025 : r * 0.04;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(80,180,255,0.8)';
+        ctx.shadowBlur = arc.thin ? 4 : 8;
+        ctx.beginPath();
+        ctx.moveTo(arc.pts[0][0], arc.pts[0][1]);
+        ctx.quadraticCurveTo(arc.pts[1][0], arc.pts[1][1], arc.pts[2][0], arc.pts[2][1]);
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // Bright center glow
+    const centerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.32);
+    centerGlow.addColorStop(0, 'rgba(255,255,255,1)');
+    centerGlow.addColorStop(0.5, 'rgba(180,230,255,0.7)');
+    centerGlow.addColorStop(1, 'rgba(80,160,255,0)');
+    ctx.fillStyle = centerGlow;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(80,160,255,0.7)';
     ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.shadowColor = 'rgba(80,160,255,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 function drawNeon(ctx, r) {
-    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#E4FFFF');
-    gradient.addColorStop(0.5, '#00F5FF');
-    gradient.addColorStop(1, '#0076A3');
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // === ЛАВА (Lava Planet) ===
+    const bg = ctx.createRadialGradient(-r * 0.2, -r * 0.15, r * 0.05, 0, 0, r);
+    bg.addColorStop(0, '#FFD060');
+    bg.addColorStop(0.3, '#FF6600');
+    bg.addColorStop(0.7, '#CC2200');
+    bg.addColorStop(1, '#3A0800');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = bg; ctx.fill();
+
+    // Dark crack network
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+
+    ctx.strokeStyle = 'rgba(15,3,0,0.85)';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = r * 0.09;
+
+    const cracks = [
+        [[-r*0.05, -r*0.65], [-r*0.35, -r*0.2], [-r*0.6, r*0.05]],
+        [[-r*0.05, -r*0.65], [r*0.25, -r*0.3], [r*0.65, r*0.05]],
+        [[r*0.65, r*0.05], [r*0.35, r*0.35], [r*0.15, r*0.7]],
+        [[-r*0.6, r*0.05], [-r*0.1, r*0.3], [r*0.15, r*0.7]],
+        [[-r*0.35, -r*0.2], [-r*0.05, r*0.05], [r*0.25, -r*0.3]],
+    ];
+
+    cracks.forEach(pts => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+        ctx.stroke();
+    });
+
+    // Glowing crack centers
+    ctx.strokeStyle = 'rgba(255,190,50,0.6)';
+    ctx.lineWidth = r * 0.025;
+    cracks.slice(0, 3).forEach(pts => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+        ctx.stroke();
+    });
+
+    // Volcanic dark patches
+    ctx.fillStyle = 'rgba(10,2,0,0.7)';
+    [[-r*0.25, r*0.45], [r*0.4, r*0.4], [-r*0.45, -r*0.4]].forEach(([sx, sy]) => {
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r * 0.14, r * 0.1, 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,120,0,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(255,100,0,0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 function drawGalaxy(ctx, r) {
-    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#F0C6FF');
-    gradient.addColorStop(0.4, '#B000FF');
-    gradient.addColorStop(1, '#3E0C7A');
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(200, 120, 255, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // === ТУМАННОСТЬ (Nebula / Galaxy Swirl) ===
+    const bg = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    bg.addColorStop(0, '#FFCCFF');
+    bg.addColorStop(0.15, '#EE88FF');
+    bg.addColorStop(0.4, '#9922DD');
+    bg.addColorStop(0.7, '#440088');
+    bg.addColorStop(1, '#080012');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = bg; ctx.fill();
+
+    // Spiral arms
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (let arm = 0; arm < 2; arm++) {
+        const offset = arm * Math.PI;
+
+        ctx.strokeStyle = 'rgba(230,150,255,0.45)';
+        ctx.lineWidth = r * 0.13;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        let first = true;
+        for (let t = 0; t <= 1; t += 0.025) {
+            const angle = offset + t * Math.PI * 1.75;
+            const dist = t * r * 0.82;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist;
+            if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255,200,255,0.5)';
+        ctx.lineWidth = r * 0.055;
+        ctx.beginPath();
+        first = true;
+        for (let t = 0; t <= 0.7; t += 0.025) {
+            const angle = offset + t * Math.PI * 1.5;
+            const dist = t * r * 0.6;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist;
+            if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Stars
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    [
+        [-r*0.55, -r*0.4, 0.045], [r*0.5, -r*0.35, 0.035],
+        [r*0.4, r*0.52, 0.04], [-r*0.5, r*0.35, 0.03],
+        [r*0.2, -r*0.65, 0.025], [-r*0.25, r*0.6, 0.03],
+        [r*0.65, r*0.15, 0.02],
+    ].forEach(([sx, sy, sr]) => {
+        ctx.beginPath(); ctx.arc(sx, sy, r * sr, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+
+    // Center core
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.28);
+    core.addColorStop(0, 'rgba(255,255,255,1)');
+    core.addColorStop(0.4, 'rgba(255,180,255,0.8)');
+    core.addColorStop(1, 'rgba(200,80,255,0)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(180,80,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(200,80,255,0.7)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 function drawGolden(ctx, r) {
-    const gradient = ctx.createRadialGradient(-r / 3, -r / 3, r / 4, 0, 0, r);
-    gradient.addColorStop(0, '#FFF6C2');
-    gradient.addColorStop(0.5, '#FFD34D');
-    gradient.addColorStop(1, '#FF9F1A');
+    // === КРИСТАЛЛ (Cut Gem Crystal) ===
+    const bg = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.05, 0, 0, r);
+    bg.addColorStop(0, '#FFFFFF');
+    bg.addColorStop(0.15, '#CCFFFF');
+    bg.addColorStop(0.4, '#00BBCC');
+    bg.addColorStop(0.75, '#006680');
+    bg.addColorStop(1, '#001820');
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = bg; ctx.fill();
+
+    // Gem facets
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = r * 0.045;
+    ctx.lineCap = 'round';
+    [
+        [[0, -r*0.9], [r*0.55, -r*0.05]],
+        [[0, -r*0.9], [-r*0.55, -r*0.05]],
+        [[r*0.55, -r*0.05], [r*0.55, r*0.65]],
+        [[-r*0.55, -r*0.05], [-r*0.55, r*0.65]],
+        [[r*0.55, r*0.65], [0, r*0.9]],
+        [[-r*0.55, r*0.65], [0, r*0.9]],
+        [[r*0.55, -r*0.05], [-r*0.55, -r*0.05]],
+        [[r*0.55, r*0.65], [-r*0.55, r*0.65]],
+        [[0, -r*0.9], [0, r*0.9]],
+    ].forEach(([p1, p2]) => {
+        ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+    });
+
+    // Facet shading
+    ctx.fillStyle = 'rgba(200,255,255,0.1)';
     ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
+    ctx.moveTo(0, -r * 0.9); ctx.lineTo(-r * 0.55, -r * 0.05); ctx.lineTo(0, 0);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = 'rgba(0,200,220,0.07)';
+    ctx.beginPath();
+    ctx.moveTo(r * 0.55, -r * 0.05); ctx.lineTo(r * 0.55, r * 0.65); ctx.lineTo(0, 0);
+    ctx.closePath(); ctx.fill();
+
+    // Star burst highlight
+    ctx.globalCompositeOperation = 'lighter';
+    [0, Math.PI*0.5, Math.PI, Math.PI*1.5, Math.PI*0.25, Math.PI*0.75, Math.PI*1.25, Math.PI*1.75].forEach((angle, i) => {
+        const len = i % 2 === 0 ? r * 0.55 : r * 0.28;
+        const alpha = i % 2 === 0 ? 0.28 : 0.14;
+        ctx.strokeStyle = `rgba(200,255,255,${alpha})`;
+        ctx.lineWidth = r * (i % 2 === 0 ? 0.07 : 0.035);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angle) * len, Math.sin(angle) * len);
+        ctx.stroke();
+    });
+
+    ctx.restore();
+
+    // Main highlight spot
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.25, -r * 0.28, r * 0.18, r * 0.08, -0.4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 210, 90, 0.9)';
+
+    ctx.strokeStyle = 'rgba(0,200,230,0.75)';
     ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.shadowColor = 'rgba(0,210,240,0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 // --- STAR ABOVE HOOP ---
