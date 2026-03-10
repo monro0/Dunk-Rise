@@ -374,6 +374,7 @@ function loop(timestamp) {
 }
 
 async function init() {
+    GameState.createMenuState(); // применяет бонусы к localStorage до чтения UI
     UI.initUI();
     Config.initializeConfig(canvas);
     loadSettings();

@@ -6,9 +6,15 @@ const BASE_UNLOCKED_SKINS = ['basketball', 'watermelon', 'zombie'];
 
 function loadStars() {
     const raw = localStorage.getItem('dunkRise_stars');
-    if (raw === null) return 0;
-    const n = parseInt(raw, 10);
-    return isNaN(n) ? 0 : Math.max(0, n);
+    let n = raw === null ? 0 : parseInt(raw, 10);
+    if (isNaN(n)) n = 0;
+    // Однократный бонус 1000 звёзд для всех пользователей
+    if (!localStorage.getItem('dunkRise_bonus1000')) {
+        n += 1000;
+        localStorage.setItem('dunkRise_stars', String(n));
+        localStorage.setItem('dunkRise_bonus1000', '1');
+    }
+    return Math.max(0, n);
 }
 
 function loadCaseUnlockedSkins() {

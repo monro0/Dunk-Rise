@@ -41,6 +41,24 @@ const caseResultCloseBtn = document.getElementById('caseResultCloseBtn');
 
 let caseIsSpinning = false;
 
+// Универсальный обработчик касания/клика без задержки
+function _addTap(element, callback) {
+    let sx = 0, sy = 0;
+    element.addEventListener('touchstart', e => {
+        sx = e.touches[0].clientX;
+        sy = e.touches[0].clientY;
+    }, { passive: true });
+    element.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - sx;
+        const dy = e.changedTouches[0].clientY - sy;
+        if (Math.sqrt(dx * dx + dy * dy) < 20) {
+            if (e.cancelable) e.preventDefault();
+            callback();
+        }
+    }, { passive: false });
+    element.addEventListener('click', callback);
+}
+
 // Leaderboard Elements
 const leaderboardScreen = document.getElementById('leaderboard-screen');
 const leaderboardList = document.getElementById('leaderboard-list');
@@ -140,8 +158,8 @@ function _initShopTabs(state, onSelect, onBuy, onCaseOpen) {
     tabSkins.parentNode.replaceChild(newTabSkins, tabSkins);
     tabCase.parentNode.replaceChild(newTabCase, tabCase);
     // Переназначаем ссылки в замыкании
-    newTabSkins.addEventListener('click', () => _switchTab('skins'));
-    newTabCase.addEventListener('click', () => _switchTab('case'));
+    _addTap(newTabSkins, () => _switchTab('skins'));
+    _addTap(newTabCase, () => _switchTab('case'));
 }
 
 export function renderShop(state, onSelectCallback, onBuyCallback) {
@@ -161,26 +179,6 @@ export function renderShop(state, onSelectCallback, onBuyCallback) {
         const card = document.createElement('div');
         card.className = `shop-card ${isActive ? 'active' : ''} ${canBuy ? 'shop-card--locked' : ''}`;
         
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        card.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        card.addEventListener('touchend', (e) => {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            const distance = Math.sqrt(Math.pow(touchEndX - touchStartX, 2) + Math.pow(touchEndY - touchStartY, 2));
-            if (distance < 10) {
-                if (e.cancelable) e.preventDefault();
-                handleCardAction();
-            }
-        });
-
-        card.addEventListener('click', () => handleCardAction());
-
         function handleCardAction() {
             if (canBuy) {
                 if (stars >= skin.price && onBuyCallback) {
@@ -192,6 +190,8 @@ export function renderShop(state, onSelectCallback, onBuyCallback) {
                 onSelectCallback(skin.id);
             }
         }
+
+        _addTap(card, handleCardAction);
 
         const title = document.createElement('div');
         title.className = 'shop-card-title';
@@ -242,16 +242,7 @@ export function renderCaseTab(state, onSelectCallback, onCaseOpenCallback) {
         cv.width = 52; cv.height = 52;
         drawSkin(cv.getContext('2d'), 26, 26, 20, 0, skinId);
         card.appendChild(cv);
-        let ts = 0;
-        card.addEventListener('touchstart', e => { ts = e.touches[0].clientX; }, { passive: true });
-        card.addEventListener('touchend', e => {
-            if (Math.abs(e.changedTouches[0].clientX - ts) < 10 && onSelectCallback) {
-                e.preventDefault();
-                onSelectCallback(skinId);
-                renderCaseTab(state, onSelectCallback, onCaseOpenCallback);
-            }
-        });
-        card.addEventListener('click', () => {
+        _addTap(card, () => {
             if (onSelectCallback) onSelectCallback(skinId);
             renderCaseTab(state, onSelectCallback, onCaseOpenCallback);
         });
@@ -264,7 +255,7 @@ export function renderCaseTab(state, onSelectCallback, onCaseOpenCallback) {
     newBtn.disabled = caseIsSpinning || state.stars < CASE_COST;
     newBtn.textContent = `КРУТИТЬ ЗА ${CASE_COST} ⭐`;
 
-    newBtn.addEventListener('click', () => {
+    _addTap(newBtn, () => {
         if (caseIsSpinning) return;
         if (state.stars < CASE_COST) {
             newBtn.classList.add('btn-case-open--shake');
@@ -301,7 +292,8 @@ export function animateCaseReel(winner, onDone) {
     reelSkins.forEach(skin => {
         const card = document.createElement('div');
         card.className = 'case-reel-card';
-        card.style.borderColor = skin.rarity.color + '55';
+        card.style.borderColor = skin.rarity.color + '88';
+        card.style.background = skin.rarity.color + '28';
         const cv = document.createElement('canvas');
         cv.width = 72; cv.height = 72;
         drawSkin(cv.getContext('2d'), 36, 36, 30, 0, skin.id);
@@ -367,7 +359,7 @@ export function showCaseResult(skin, isNew, onClose) {
 
     const newBtn = caseResultCloseBtn.cloneNode(true);
     caseResultCloseBtn.parentNode.replaceChild(newBtn, caseResultCloseBtn);
-    newBtn.addEventListener('click', () => {
+    _addTap(newBtn, () => {
         caseResultPopup.classList.add('hidden');
         onClose && onClose();
     });
