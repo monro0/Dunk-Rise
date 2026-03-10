@@ -1049,6 +1049,52 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 .btn-case-open--shake { animation: caseShake 0.35s ease; }
 
+/* --- AD BUTTON (SECOND CHANCE) --- */
+
+.ad-button {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(76, 175, 80, 0.35);
+    transition: transform 0.15s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 auto;
+    touch-action: manipulation;
+    text-transform: none;
+    letter-spacing: 0.02em;
+}
+
+.ad-button:hover {
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.45);
+}
+
+.ad-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+}
+
+.ad-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ad-subtext {
+    margin-top: 12px;
+    margin-bottom: 0;
+    font-size: 0.85rem;
+    color: #888888;
+    text-align: center;
+    line-height: 1.4;
+}
+
 /* --- ВЫБИТЫЕ СКИНЫ --- */
 .case-owned-section {
     width: 100%;

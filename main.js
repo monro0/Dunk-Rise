@@ -8,6 +8,7 @@ import { GameSettings } from './config.js';
 import { initAudio, playSound } from './audio.js';
 import { saveScore, incrementPlayerCount } from './leaderboard.js';
 import { loadAllSkins } from './skin-loader.js';
+import { openChannel, pauseTimer, resumeTimer, setPauseCallback, setResumeCallback } from './telegram-ads.js';
 
 // --- TELEGRAM BRIDGE (FIX FOR UPLOAD ERRORS) ---
 // Безопасная обертка, чтобы скрыть прямые вызовы window.Telegram
@@ -211,6 +212,14 @@ function triggerSecondChance() {
     }, 1000);
 }
 
+function pauseSecondChanceTimer() {
+    clearInterval(reviveTimerInterval);
+}
+
+function resumeSecondChanceTimer() {
+    // Таймер не возобновляем — игрок уже получил шанс
+}
+
 function performCloseSecondChance() {
     clearInterval(reviveTimerInterval);
     if (gameState) {
@@ -221,9 +230,9 @@ function performCloseSecondChance() {
 function showFinalGameOver(finalScore) {
     const currentHigh = parseInt(localStorage.getItem('dunkRiseHighScore') || '0');
     const isRecord = finalScore > currentHigh;
-    
+
     UI.showGameOverScreen(finalScore, isRecord);
-    
+
     // Автоматически сохраняем результат в таблице лидеров
     if (finalScore > 0) {
         saveScore(finalScore).then((saved) => {
@@ -237,14 +246,18 @@ function showFinalGameOver(finalScore) {
 }
 
 function performRevive() {
-    clearInterval(reviveTimerInterval);
-    setTimeout(() => {
-        UI.hideSecondChanceScreen();
-        hasUsedRevive = true;
-        if (gameState) {
-            GameState.reviveGameLogic(gameState);
-        }
-    }, 500);
+    // Открываем Telegram-канал для подписки
+    openChannel(() => {
+        // Этот колбэк вызывается после подписки
+        clearInterval(reviveTimerInterval);
+        setTimeout(() => {
+            UI.hideSecondChanceScreen();
+            hasUsedRevive = true;
+            if (gameState) {
+                GameState.reviveGameLogic(gameState);
+            }
+        }, 500);
+    });
 }
 
 function performFullRestart() {
@@ -382,6 +395,15 @@ async function init() {
 
     // Считаем уникальных игроков (при первом запуске)
     incrementPlayerCount();
+
+    // Настраиваем колбэки для паузы таймера рекламы
+    setPauseCallback(() => {
+        // Таймер на паузе - можно остановить интервал
+        clearInterval(reviveTimerInterval);
+    });
+    setResumeCallback(() => {
+        // Таймер возобновлён - но не перезапускаем, так как игрок уже получил шанс
+    });
 
     // Загружаем текстуры скинов
     await loadAllSkins(Config.SKINS, 'assets/skins/');
