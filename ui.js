@@ -1,6 +1,6 @@
 import { SKINS, CASE_SKINS, CASE_COST } from './config.js';
 import { drawSkin } from './game-draw.js';
-import { getTopPlayers } from './leaderboard.js';
+import { getTopPlayers, getTotalPlayers } from './leaderboard.js';
 import { isSkinLoaded } from './skin-loader.js';
 
 // --- UI MANAGER (Pure View) ---
@@ -101,12 +101,21 @@ export function hideMainMenu() {
 
 // --- SETTINGS UI ---
 
+let playersUnsubscribe = null;
+
 export function showSettings() {
     if (settingsScreen) settingsScreen.classList.remove('hidden');
+    // Загружаем статистику игроков
+    loadPlayerStats();
 }
 
 export function hideSettings() {
     if (settingsScreen) settingsScreen.classList.add('hidden');
+    // Отписываемся от обновлений
+    if (playersUnsubscribe) {
+        playersUnsubscribe();
+        playersUnsubscribe = null;
+    }
 }
 
 export function syncSettingsUI(settings) {
@@ -117,6 +126,15 @@ export function syncSettingsUI(settings) {
     if (soundToggle) {
         soundToggle.checked = settings.sound;
     }
+}
+
+function loadPlayerStats() {
+    const totalPlayersEl = document.getElementById('totalPlayers');
+    if (!totalPlayersEl) return;
+
+    playersUnsubscribe = getTotalPlayers((count) => {
+        totalPlayersEl.innerText = count.toLocaleString('ru-RU');
+    });
 }
 
 // --- SHOP UI ---

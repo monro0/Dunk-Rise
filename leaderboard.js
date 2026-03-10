@@ -1,16 +1,17 @@
 // --- FIREBASE LEADERBOARD MODULE ---
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { 
-    getDatabase, 
-    ref, 
-    set, 
-    push, 
-    onValue, 
-    query, 
-    orderByChild, 
+import {
+    getDatabase,
+    ref,
+    set,
+    push,
+    onValue,
+    query,
+    orderByChild,
     limitToLast,
-    get
+    get,
+    runTransaction
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
 // Firebase конфигурация
@@ -236,21 +237,63 @@ export async function getPlayerRank() {
  */
 export async function isNewRecord(score) {
     const playerId = getPlayerId();
-    
+
     try {
         const playerRef = ref(db, `leaderboard/${playerId}`);
         const snapshot = await get(playerRef);
-        
+
         if (snapshot.exists()) {
             const existingScore = snapshot.val().score;
             return score > existingScore;
         }
-        
+
         return true; // Игрока ещё нет в таблице
     } catch (error) {
         console.error('Ошибка проверки рекорда:', error);
         return false;
     }
+}
+
+// --- СТАТИСТИКА ИГРОКОВ ---
+
+/**
+ * Увеличить счётчик уникальных игроков (при первом запуске)
+ */
+export function incrementPlayerCount() {
+    // Проверяем, считали ли уже этого игрока
+    const hasCounted = localStorage.getItem('dunkRise_counted');
+    if (hasCounted) return;
+
+    const statsRef = ref(db, 'stats/totalPlayers');
+
+    // Атомарное увеличение (runTransaction) — безопасно при одновременных запросах
+    runTransaction(statsRef, (current) => (current || 0) + 1)
+        .then(() => {
+            localStorage.setItem('dunkRise_counted', 'true');
+            console.log('Счётчик игроков обновлён');
+        })
+        .catch((error) => {
+            console.error('Ошибка обновления счётчика:', error);
+        });
+}
+
+/**
+ * Получить общее количество игроков
+ * @param {function} callback - Функция обратного вызова с числом игроков
+ * @returns {function} - Функция для отписки от обновлений
+ */
+export function getTotalPlayers(callback) {
+    const statsRef = ref(db, 'stats/totalPlayers');
+    
+    const unsubscribe = onValue(statsRef, (snapshot) => {
+        const count = snapshot.val() || 0;
+        callback(count);
+    }, (error) => {
+        console.error('Ошибка получения статистики:', error);
+        callback(0);
+    });
+
+    return unsubscribe;
 }
 
 // Экспорт утилит

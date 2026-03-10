@@ -6,7 +6,7 @@ import * as GameDraw from './game-draw.js';
 import * as GameInput from './game-input.js';
 import { GameSettings } from './config.js';
 import { initAudio, playSound } from './audio.js';
-import { saveScore } from './leaderboard.js';
+import { saveScore, incrementPlayerCount } from './leaderboard.js';
 import { loadAllSkins } from './skin-loader.js';
 
 // --- TELEGRAM BRIDGE (FIX FOR UPLOAD ERRORS) ---
@@ -379,10 +379,13 @@ async function init() {
     Config.initializeConfig(canvas);
     loadSettings();
     initAudio();
-    
+
+    // Считаем уникальных игроков (при первом запуске)
+    incrementPlayerCount();
+
     // Загружаем текстуры скинов
     await loadAllSkins(Config.SKINS, 'assets/skins/');
-    
+
     resize();
     UI.showMainMenu();
     lastTime = performance.now();
